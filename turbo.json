@@ -1,0 +1,22 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["tsconfig.json"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"],
+      "outputLogs": "new-only",
+      "inputs": ["$TURBO_DEFAULT$"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**/*.ts", "src/**/*.tsx"]
+    },
+    "check-types": {
+      "dependsOn": ["^build"]
+    },
+    "clean": {
+      "cache": false
+    }
+  }
+}

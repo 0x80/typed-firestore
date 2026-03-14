@@ -1,0 +1,60 @@
+{
+  "name": "@typed-firestore/react",
+  "version": "1.5.0",
+  "description": "Elegant, typed abstractions for Firestore in React applications",
+  "keywords": [
+    "firebase",
+    "firestore",
+    "hooks",
+    "react",
+    "typed",
+    "typed-firestore",
+    "typescript"
+  ],
+  "license": "Apache-2.0",
+  "author": "Thijs Koerselman",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0x80/typed-firestore",
+    "directory": "packages/react"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "build": "tsdown",
+    "clean": "del-cli dist tsconfig.tsbuildinfo",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@codecompose/typescript-config": "^3.0.0",
+    "@types/react": "^19.2.14",
+    "del-cli": "^7.0.0",
+    "firebase": "^12.9.0",
+    "react": "^19.2.4",
+    "tsdown": "^0.20.3",
+    "vitest": "^4.0.18"
+  },
+  "peerDependencies": {
+    "firebase": ">=10.0",
+    "react": ">=16.8.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

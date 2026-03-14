@@ -1,0 +1,71 @@
+{
+  "name": "@typed-firestore/server",
+  "version": "2.3.1",
+  "description": "Elegant, typed abstractions for Firestore in server environments",
+  "keywords": [
+    "firebase",
+    "firebase-admin",
+    "firestore",
+    "server",
+    "typed",
+    "typed-firestore",
+    "typescript"
+  ],
+  "license": "Apache-2.0",
+  "author": "Thijs Koerselman",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0x80/typed-firestore",
+    "directory": "packages/server"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    },
+    "./functions": {
+      "types": "./dist/functions/index.d.mts",
+      "default": "./dist/functions/index.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "build": "tsdown",
+    "clean": "del-cli dist tsconfig.tsbuildinfo",
+    "test": "echo \"No test specified\""
+  },
+  "dependencies": {
+    "process-in-chunks": "1.2.1"
+  },
+  "devDependencies": {
+    "@codecompose/typescript-config": "^3.0.0",
+    "@types/node": "^25.2.3",
+    "del-cli": "^7.0.0",
+    "tsdown": "^0.20.3"
+  },
+  "peerDependencies": {
+    "firebase-admin": ">=12.0",
+    "firebase-functions": ">=5.0"
+  },
+  "peerDependenciesMeta": {
+    "firebase-admin": {
+      "optional": true
+    },
+    "firebase-functions": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "name": "typed-firestore",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Typed Firestore libraries for server, React and React Native",
+  "scripts": {
+    "build": "turbo build",
+    "check-types": "turbo check-types --continue",
+    "check-lint": "oxlint -c .oxlintrc.json --import-plugin --type-aware",
+    "check-format": "oxfmt --check",
+    "format": "oxfmt",
+    "test": "turbo test --continue -- --watch false",
+    "clean": "turbo clean",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "oxfmt": "^0.34.0",
+    "oxlint": "^1.49.0",
+    "oxlint-tsgolint": "^0.14.1",
+    "turbo": "^2.8.10",
+    "typescript": "6.0.0-beta"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,mjs,cjs}": [
+      "oxfmt --no-error-on-unmatched-pattern",
+      "oxlint -c .oxlintrc.json --import-plugin --type-aware"
+    ],
+    "!(*.{js,jsx,ts,tsx,mjs,cjs})": [
+      "oxfmt --no-error-on-unmatched-pattern"
+    ]
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "packageManager": "pnpm@10.6.5"
+}

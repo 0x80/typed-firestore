@@ -1,0 +1,3 @@
+{
+  "extends": "@codecompose/typescript-config/react-library"
+}

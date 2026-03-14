@@ -1,0 +1,56 @@
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: ["**"]
+  workflow_call:
+
+concurrency:
+  # Use unique group per run when called from another workflow to prevent
+  # deadlocks. Otherwise group by ref so new pushes cancel in-progress runs.
+  group: ${{ github.event_name == 'workflow_call' && format('{0}-{1}',
+    github.workflow, github.run_id) || format('{0}-{1}', github.workflow,
+    github.ref) }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        command: [check-types, check-format, check-lint, test]
+
+    name: ${{ matrix.command }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Enable corepack
+        run: corepack enable pnpm
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ${{ matrix.command }}
+        run: pnpm ${{ matrix.command }}
