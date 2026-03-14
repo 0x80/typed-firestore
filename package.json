@@ -11,6 +11,9 @@
     "format": "oxfmt",
     "test": "turbo test --continue -- --watch false",
     "clean": "turbo clean",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
     "prepare": "husky"
   },
   "devDependencies": {
@@ -20,7 +23,8 @@
     "oxlint": "^1.49.0",
     "oxlint-tsgolint": "^0.14.1",
     "turbo": "^2.8.10",
-    "typescript": "6.0.0-beta"
+    "typescript": "6.0.0-beta",
+    "vitepress": "^1.6.3"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,mjs,cjs}": [
