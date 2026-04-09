@@ -49,6 +49,5 @@ Only 2nd gen cloud function events are supported.
 | ---------------------------- | ---------------------------------------------------------- |
 | `getDataOnCreated`           | Get the data from a document create event                  |
 | `getDataOnWritten`           | Get the data from a document write event                   |
-| `getDataOnUpdated`           | Get the data from a document update event                  |
 | `getBeforeAndAfterOnWritten` | Get the before and after data from a document write event  |
 | `getBeforeAndAfterOnUpdated` | Get the before and after data from a document update event |

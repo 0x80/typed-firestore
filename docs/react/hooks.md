@@ -26,10 +26,13 @@ Everything flows from the collection refs.
 
 ```ts
 import { useCollection } from "@typed-firestore/react";
+import { where, limit } from "firebase/firestore";
 
 function BookList() {
-  const [books, isLoading] = useCollection(refs.books, (query) =>
-    query.where("is_published", "==", true).limit(20),
+  const [books, isLoading] = useCollection(
+    refs.books,
+    where("is_published", "==", true),
+    limit(20),
   );
 
   if (isLoading) return <Spinner />;
@@ -40,12 +43,14 @@ function BookList() {
 
 ## API Reference
 
-| Hook                  | Description                                                                |
-| --------------------- | -------------------------------------------------------------------------- |
-| `useDocument`         | Use a document and subscribe to changes                                    |
-| `useDocumentData`     | Use only the data part of a document and subscribe to changes              |
-| `useDocumentMaybe`    | Use a document that might not exist                                        |
-| `useDocumentOnce`     | Use a document once and do not subscribe for changes                       |
-| `useDocumentDataOnce` | Use only the data part of a document once and do not subscribe for changes |
-| `useCollection`       | Query a collection and subscribe for changes                               |
-| `useCollectionOnce`   | Query a collection once and do not subscribe for changes                   |
+| Hook                      | Description                                                                |
+| ------------------------- | -------------------------------------------------------------------------- |
+| `useDocument`             | Use a document and subscribe to changes                                    |
+| `useDocumentData`         | Use only the data part of a document and subscribe to changes              |
+| `useDocumentMaybe`        | Use a document that might not exist                                        |
+| `useDocumentOnce`         | Use a document once and do not subscribe for changes                       |
+| `useDocumentDataOnce`     | Use only the data part of a document once and do not subscribe for changes |
+| `useSpecificDocument`     | Use a document by ref and subscribe to changes                             |
+| `useSpecificDocumentData` | Use only the data part of a document by ref                                |
+| `useCollection`           | Query a collection and subscribe for changes                               |
+| `useCollectionOnce`       | Query a collection once and do not subscribe for changes                   |
