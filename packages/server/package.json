@@ -1,6 +1,6 @@
 {
   "name": "@typed-firestore/server",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "Elegant, typed abstractions for Firestore in server environments",
   "keywords": [
     "firebase",
