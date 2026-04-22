@@ -109,7 +109,7 @@ jobs:
         run: |
           git add packages/${{ inputs.package }}/package.json
           git commit -m "${{ steps.version.outputs.tag }}"
-          git tag "${{ steps.version.outputs.tag }}"
+          git tag -a "${{ steps.version.outputs.tag }}" -m "${{ steps.version.outputs.tag }}"
 
       - name: Publish summary
         run: |
