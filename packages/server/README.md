@@ -234,18 +234,20 @@ console about the chunks that are being fetched and processed.
 
 ### Cloud Function Utilities
 
-For cloud functions, there are helpers to get typed data from the event.
+For cloud functions, there are helpers to get typed data from the event, and to
+build the trigger path from a typed collection reference.
 
 ```ts
 import {
   getDataOnWritten,
   getBeforeAndAfterOnWritten,
+  makeDocumentHandlerPath,
 } from "@typed-firestore/server/functions";
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 
 export const handleBookUpdates = onDocumentWritten(
   {
-    document: "books/{documentId}",
+    document: makeDocumentHandlerPath(refs.books),
   },
   async (event) => {
     /** Get only the most recent data */
@@ -260,6 +262,11 @@ export const handleBookUpdates = onDocumentWritten(
 Here we pass the typed collection reference only to facilitate the type
 inference, and to keep things consistent. The data is extracted from the event
 and not fetched from the ref.
+
+`makeDocumentHandlerPath` preserves the wildcard parameter name in the return
+type, so `event.params.documentId` is correctly typed. Pass a custom parameter
+name as the second argument when needed, e.g.
+`makeDocumentHandlerPath(refs.userSessions, "userId")`.
 
 ## Keep Select Separate from Query
 
@@ -414,13 +421,14 @@ the next major version.
 In cloud functions, you typically get the data from the event and then act on
 it. The following convenience functions take the event and return typed data.
 
-| Function                     | Description                                                |
-| ---------------------------- | ---------------------------------------------------------- |
-| `getDataOnCreated`           | Get the data from a document create event                  |
-| `getDataOnWritten`           | Get the data from a document write event                   |
-| `getDataOnUpdated`           | Get the data from a document update event                  |
-| `getBeforeAndAfterOnWritten` | Get the before and after data from a document write event  |
-| `getBeforeAndAfterOnUpdated` | Get the before and after data from a document update event |
+| Function                     | Description                                                          |
+| ---------------------------- | -------------------------------------------------------------------- |
+| `getDataOnCreated`           | Get the data from a document create event                            |
+| `getDataOnWritten`           | Get the data from a document write event                             |
+| `getDataOnUpdated`           | Get the data from a document update event                            |
+| `getBeforeAndAfterOnWritten` | Get the before and after data from a document write event            |
+| `getBeforeAndAfterOnUpdated` | Get the before and after data from a document update event           |
+| `makeDocumentHandlerPath`    | Build a trigger path from a typed ref, preserving the wildcard param |
 
 Note that the functions are exported on `@typed-firestore/server/functions`, so
 that the `firebase-admin` and `firebase-functions` peer-dependencies can both be
