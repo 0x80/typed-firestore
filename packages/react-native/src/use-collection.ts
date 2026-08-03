@@ -1,4 +1,4 @@
-import { limit, query } from "@react-native-firebase/firestore";
+import { limit } from "@react-native-firebase/firestore";
 import { useMemo } from "react";
 import type {
   CollectionReference,
@@ -8,7 +8,8 @@ import type {
 import { useCollection_fork, useCollectionOnce_fork } from "./fork";
 import { makeMutableDocument } from "./make-mutable-document";
 import type { FsMutableDocument } from "./types";
-import { getErrorMessage, isDefined } from "./utils";
+import { query } from "./typed-modular";
+import { getErrorMessage } from "./utils";
 
 export function useCollection<T extends DocumentData>(
   collectionRef: CollectionReference<T>,
@@ -18,7 +19,7 @@ export function useCollection<T extends DocumentData>(
 
   const _query = hasNoConstraints
     ? query(collectionRef, limit(500))
-    : query(collectionRef, ...queryConstraints.filter(isDefined));
+    : query(collectionRef, ...queryConstraints);
 
   /**
    * We do not need the loading state really. If there is no data, and there is
@@ -50,7 +51,7 @@ export function useCollectionOnce<T extends DocumentData>(
 
   const _query = hasNoConstraints
     ? query(collectionRef, limit(500))
-    : query(collectionRef, ...queryConstraints.filter(isDefined));
+    : query(collectionRef, ...queryConstraints);
 
   /**
    * We do not need the loading state really. If there is no data, and there is
@@ -82,7 +83,7 @@ export function useCollectionMaybe<T extends DocumentData>(
 
   const _query = hasNoConstraints
     ? query(collectionRef, limit(500))
-    : query(collectionRef, ...queryConstraints.filter(isDefined));
+    : query(collectionRef, ...queryConstraints);
 
   const [snapshot, isLoading, error] = useCollection_fork(_query);
 

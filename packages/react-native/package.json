@@ -43,7 +43,7 @@
   },
   "devDependencies": {
     "@codecompose/typescript-config": "3.0.0",
-    "@react-native-firebase/firestore": "~21.7.1",
+    "@react-native-firebase/firestore": "~22.4.0",
     "@types/react": "^19.2.14",
     "del-cli": "^7.0.0",
     "react": "^19.2.4",

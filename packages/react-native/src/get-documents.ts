@@ -1,11 +1,11 @@
-import { getDocs, limit, query } from "@react-native-firebase/firestore";
+import { limit } from "@react-native-firebase/firestore";
 import type {
   CollectionReference,
   DocumentData,
   QueryConstraints,
 } from "./firestore-types";
 import { makeMutableDocument } from "./make-mutable-document";
-import { isDefined } from "./utils";
+import { getDocs, query } from "./typed-modular";
 
 export async function getDocuments<T extends DocumentData>(
   collectionRef: CollectionReference<T>,
@@ -14,7 +14,7 @@ export async function getDocuments<T extends DocumentData>(
   const _query =
     queryConstraints.length === 0
       ? query(collectionRef, limit(500))
-      : query(collectionRef, ...queryConstraints.filter(isDefined));
+      : query(collectionRef, ...queryConstraints);
 
   const snapshot = await getDocs(_query);
 
@@ -28,7 +28,7 @@ export async function getDocumentsData<T extends DocumentData>(
   const _query =
     queryConstraints.length === 0
       ? query(collectionRef, limit(500))
-      : query(collectionRef, ...queryConstraints.filter(isDefined));
+      : query(collectionRef, ...queryConstraints);
 
   const snapshot = await getDocs(_query);
 
