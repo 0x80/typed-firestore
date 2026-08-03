@@ -19,10 +19,14 @@ export type UpdateData<T> = Partial<T>;
 
 export type WriteResult = {
   /**
-   * The server commit time. Absent on a delete, whose response body is empty.
-   * Never synthesized from the local clock.
+   * The write time as set by the Firestore servers, named to match the
+   * `WriteResult` of firebase-admin so the two packages stay interchangeable.
+   *
+   * Absent on a delete, whose response body is empty. It is never synthesized
+   * from the local clock, which is why it is optional here where the SDK's is
+   * not.
    */
-  updateTime: Timestamp | undefined;
+  writeTime: Timestamp | undefined;
 };
 
 /**

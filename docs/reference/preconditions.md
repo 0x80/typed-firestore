@@ -59,8 +59,10 @@ API response carries the document and a second read would be wasteful. The
 predicate above reads identically either way, which is the usual case.
 
 `createDocumentMaybe` is the shape idempotent submission paths want. A client
-that retries after a lost response gets `undefined` instead of an error, so the
-retry is indistinguishable from a first attempt at the call site.
+that retries after a lost response gets `undefined` instead of an error, so it
+can treat the submission as already completed. Note that `undefined` proves only
+that the id is taken, not that this caller's earlier attempt is what took it, so
+read the document back where ownership matters.
 
 ## Preconditions
 
@@ -123,7 +125,8 @@ from somewhere other than a document you are holding.
 ### A worked example
 
 The pattern these were added for: a batch worker that claims rows without two
-ticks doing the same work.
+ticks doing the same work. Written against `@typed-firestore/server`; the REST
+package is identical apart from `getDocuments` requiring an explicit `limit`.
 
 **Claim first, then work.** The order matters more than it looks: if the work
 runs while building the update argument, every tick does the work and only the
@@ -151,14 +154,25 @@ for (const job of pending) {
   /** Only now is this worker the sole owner. */
   const result = await process(job.data);
 
-  await updateDocument(refs.jobs, job.id, { status: "done", result });
+  /**
+   * Guard the completion with the version the claim produced. Without it, a
+   * worker that was reclaimed as stale would still overwrite whoever picked
+   * the job up next.
+   */
+  await updateDocument(
+    refs.jobs,
+    job.id,
+    { status: "done", result },
+    { lastUpdateTime: claimed.writeTime },
+  );
 }
 ```
 
 A worker that dies between claiming and completing leaves the job `claimed`
 forever, so a real queue also needs a way to reclaim stale work: store a
 `claimedAt` alongside the status and let a sweeper return jobs older than some
-threshold to `pending`.
+threshold to `pending`. That reclamation is exactly why the completion write
+above is conditional.
 
 ### Preconditions and missing documents
 

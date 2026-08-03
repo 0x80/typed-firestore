@@ -440,7 +440,7 @@ describe("regressions", () => {
       "abc",
     );
 
-    expect(result.updateTime).toBeUndefined();
+    expect(result.writeTime).toBeUndefined();
   });
 
   it("resolves undefined when a standalone delete precondition is not met", async () => {

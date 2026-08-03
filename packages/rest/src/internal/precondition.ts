@@ -81,8 +81,8 @@ export function toWriteResult(response: unknown): WriteResult {
     "updateTime" in response &&
     typeof response.updateTime === "string"
   ) {
-    return { updateTime: Timestamp.fromRfc3339(response.updateTime) };
+    return { writeTime: Timestamp.fromRfc3339(response.updateTime) };
   }
 
-  return { updateTime: undefined };
+  return { writeTime: undefined };
 }

@@ -92,7 +92,6 @@ export const refs = {
 ```ts
 import {
   getDocument,
-  getDocumentMaybe,
   getDocuments,
   updateDocument,
 } from "@typed-firestore/rest";
@@ -100,7 +99,11 @@ import {
 const user = await getDocument(refs.users, "abc123");
 console.log(user.data.name);
 
+/** A document you already hold can update itself. */
 await user.update({ isActive: true });
+
+/** Or write by id, without reading first. */
+await updateDocument(refs.users, "abc123", { isActive: true });
 
 const published = await getDocuments(refs.books, (query) =>
   query

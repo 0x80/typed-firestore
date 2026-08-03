@@ -17,7 +17,7 @@ without boilerplate.
 | [`@typed-firestore/server`](https://www.npmjs.com/package/@typed-firestore/server)             | Server environments (firebase-admin)  |
 | [`@typed-firestore/react`](https://www.npmjs.com/package/@typed-firestore/react)               | React applications (Firebase web SDK) |
 | [`@typed-firestore/react-native`](https://www.npmjs.com/package/@typed-firestore/react-native) | React Native (React Native Firebase)  |
-| [`@typed-firestore/rest`](https://www.npmjs.com/package/@typed-firestore/rest)                 | Any runtime with fetch (REST API)     |
+| [`@typed-firestore/rest`](https://www.npmjs.com/package/@typed-firestore/rest)                 | Any runtime with fetch and Web Crypto |
 
 ## Why Typed Firestore?
 
@@ -121,7 +121,7 @@ pnpm add @typed-firestore/react
 # React Native (React Native Firebase)
 pnpm add @typed-firestore/react-native
 
-# REST (no dependencies; Cloudflare Workers, Deno, Bun, edge)
+# REST (no dependencies; needs fetch and Web Crypto)
 pnpm add @typed-firestore/rest
 ```
 

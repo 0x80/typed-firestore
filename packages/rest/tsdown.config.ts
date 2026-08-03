@@ -13,6 +13,13 @@ export default defineConfig({
   format: ["esm"],
   target: "es2022",
   platform: "neutral",
+  /**
+   * `platform: "neutral"` changes tsdown's default output extensions to `.js`
+   * and `.d.ts`, which would no longer match the `.mjs` / `.d.mts` entry points
+   * this package's manifest declares. Pin them so the published files are the
+   * ones `main`, `types` and `exports` name.
+   */
+  fixedExtension: true,
   sourcemap: true,
   treeshake: true,
   dts: true,

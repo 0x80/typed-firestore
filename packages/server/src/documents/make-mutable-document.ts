@@ -41,33 +41,33 @@ export function makeMutableDocument<
     createTime: doc.createTime,
 
     async update(
-      data: UpdateData<TFull>,
+      updateData: UpdateData<TFull>,
       precondition?: DocumentPrecondition,
     ): Promise<WriteResult | undefined> {
       return await runWithPrecondition(
         async () =>
           precondition
             ? await doc.ref.update(
-                data,
+                updateData,
                 resolvePrecondition(precondition, readVersion),
               )
-            : await doc.ref.update(data),
+            : await doc.ref.update(updateData),
         precondition !== undefined,
       );
     },
 
     async updateWithPartial(
-      data: PartialWithFieldValue<TFull>,
+      partialData: PartialWithFieldValue<TFull>,
       precondition?: DocumentPrecondition,
     ): Promise<WriteResult | undefined> {
       return await runWithPrecondition(
         async () =>
           precondition
             ? await doc.ref.update(
-                data as UpdateData<TFull>,
+                partialData as UpdateData<TFull>,
                 resolvePrecondition(precondition, readVersion),
               )
-            : await doc.ref.update(data as UpdateData<TFull>),
+            : await doc.ref.update(partialData as UpdateData<TFull>),
         precondition !== undefined,
       );
     },
