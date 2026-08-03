@@ -11,7 +11,7 @@ import type {
   UpdateData,
   WriteResult,
 } from "~/types";
-import { decodeFields } from "~/values/decode";
+import { decodeFields, toRelativePath } from "~/values/decode";
 import { encodeFields } from "~/values/encode";
 import { quoteFieldName } from "~/values/field-path";
 import { Timestamp } from "~/values/timestamp";
@@ -45,12 +45,7 @@ export function makeMutableDocument<TNarrowOrFull, TFull = TNarrowOrFull>(
   db: DbContext,
   wire: WireDocument,
 ): FsMutableDocument<TNarrowOrFull, TFull> {
-  const prefix = `${db.documentsPath}/`;
-  const path = wire.name.startsWith(prefix)
-    ? wire.name.slice(prefix.length)
-    : wire.name;
-
-  const ref = new DocumentRef<TFull>(db, path);
+  const ref = new DocumentRef<TFull>(db, toRelativePath(wire.name, db));
   const updateTime = Timestamp.fromRfc3339(wire.updateTime);
 
   return {

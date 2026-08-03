@@ -49,10 +49,18 @@ function credential(overrides: Record<string, unknown> = {}) {
   });
 }
 
-function decodeSegment(segment: string): Record<string, unknown> {
-  const padded = segment.replaceAll("-", "+").replaceAll("_", "/");
+/**
+ * JWT segments are base64url with the padding stripped. Restore it before
+ * decoding, since not every runtime's `atob` accepts unpadded input.
+ */
+function fromBase64Url(segment: string): string {
+  const base64 = segment.replaceAll("-", "+").replaceAll("_", "/");
 
-  return JSON.parse(atob(padded)) as Record<string, unknown>;
+  return base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+}
+
+function decodeSegment(segment: string): Record<string, unknown> {
+  return JSON.parse(atob(fromBase64Url(segment))) as Record<string, unknown>;
 }
 
 /**
@@ -119,7 +127,7 @@ describe("serviceAccount", () => {
     });
 
     const signatureBytes = Uint8Array.from(
-      atob(signature!.replaceAll("-", "+").replaceAll("_", "/")),
+      atob(fromBase64Url(signature!)),
       (character) => character.charCodeAt(0),
     );
 

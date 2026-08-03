@@ -472,6 +472,23 @@ describe("regressions", () => {
     ).resolves.toBeUndefined();
   });
 
+  it("rejects a document whose name is not under this database root", async () => {
+    /**
+     * Using the unmatched name as a relative path would prefix the database
+     * root a second time and address a resource that does not exist.
+     */
+    const fake = createFakeDb(() => ({
+      name: "projects/other/databases/(default)/documents/feedback/abc",
+      createTime: "2026-08-03T12:00:00Z",
+      updateTime: "2026-08-03T12:00:00Z",
+      fields: {},
+    }));
+
+    await expect(
+      getDocument(fake.db.collection<Feedback>("feedback"), "abc"),
+    ).rejects.toThrow(/different database/);
+  });
+
   it("throws when a runQuery entry is neither a document nor read metadata", async () => {
     const fake = createFakeDb(() => [{ unexpected: true }]);
 

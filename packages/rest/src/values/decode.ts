@@ -143,11 +143,14 @@ function decodeDouble(value: number | string, path: string): number {
 
 /**
  * Turn a fully qualified resource name back into a path relative to the
- * database root. A reference to a different database throws: silently keeping
- * it would hand back a `DocumentRef` bound to this database whose path resolves
- * to a different document than the one stored.
+ * database root. A name outside this database throws: keeping it would hand
+ * back a `DocumentRef` bound to this database whose path is then prefixed with
+ * the database root a second time, addressing a resource that does not exist.
+ *
+ * Shared with `makeMutableDocument` so a decoded reference and a returned
+ * document are held to the same rule.
  */
-function toRelativePath(name: string, db: DbContext): string {
+export function toRelativePath(name: string, db: DbContext): string {
   const prefix = `${db.documentsPath}/`;
 
   if (!name.startsWith(prefix)) {
