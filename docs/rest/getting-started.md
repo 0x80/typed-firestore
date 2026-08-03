@@ -109,14 +109,19 @@ adopt it:
 
 - **Transactions.** `beginTransaction` and `commit` over REST are a real piece of
   work, including retry on `ABORTED`. Not in this version.
+  ([#14](https://github.com/0x80/typed-firestore/issues/14))
 - **Unbounded queries and `processDocuments`.** Every query needs an explicit
   `.limit()`. Without cursor pagination an unbounded query would buffer an
   entire collection, so the constraint is enforced at the call rather than left
   as a production surprise.
+  ([#13](https://github.com/0x80/typed-firestore/issues/13))
 - **Collection groups.**
+  ([#16](https://github.com/0x80/typed-firestore/issues/16))
 - **`FieldValue` sentinels** such as `serverTimestamp()`, `increment()` and
   `arrayUnion()`.
+  ([#15](https://github.com/0x80/typed-firestore/issues/15))
 - **Aggregation** (`count()`).
+  ([#17](https://github.com/0x80/typed-firestore/issues/17))
 
 Everything above is planned. The rest of the API mirrors
 [`@typed-firestore/server`](/server/documents), so what you learn there carries

@@ -70,9 +70,12 @@ if (!wrote) {
 
 ## Not here yet
 
-Transactions, unbounded queries and `processDocuments`, collection groups,
-`FieldValue` sentinels, and `count()` aggregation. Every query needs an explicit
-`.limit()` until cursor pagination lands.
+[Transactions](https://github.com/0x80/typed-firestore/issues/14),
+[unbounded queries and `processDocuments`](https://github.com/0x80/typed-firestore/issues/13),
+[collection groups](https://github.com/0x80/typed-firestore/issues/16),
+[`FieldValue` sentinels](https://github.com/0x80/typed-firestore/issues/15), and
+[`count()` aggregation](https://github.com/0x80/typed-firestore/issues/17).
+Every query needs an explicit `.limit()` until cursor pagination lands.
 
 ## Documentation
 
