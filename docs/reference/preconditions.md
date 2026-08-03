@@ -42,7 +42,7 @@ than a read followed by a write.
 import { createDocument, createDocumentMaybe } from "@typed-firestore/server";
 
 /** Throws when the id is taken. */
-const user = await createDocument(refs.users, "abc123", data);
+await createDocument(refs.users, "abc123", data);
 
 /** Resolves to undefined when the id is taken. */
 const created = await createDocumentMaybe(refs.users, "abc123", data);
@@ -51,6 +51,12 @@ if (!created) {
   /** Someone got there first. */
 }
 ```
+
+The success value differs between the two packages, because each returns what it
+already has. The server package returns a `WriteResult`, matching the SDK's own
+`create()`. The REST package returns the created `FsMutableDocument`, since the
+API response carries the document and a second read would be wasteful. The
+predicate above reads identically either way, which is the usual case.
 
 `createDocumentMaybe` is the shape idempotent submission paths want. A client
 that retries after a lost response gets `undefined` instead of an error, so the

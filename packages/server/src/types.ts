@@ -2,10 +2,14 @@ import type {
   DocumentReference,
   FieldValue,
   PartialWithFieldValue,
+  Timestamp,
   Transaction,
   UpdateData,
   WriteResult,
 } from "firebase-admin/firestore";
+import type { DocumentPrecondition } from "./documents/precondition";
+
+export type { DocumentPrecondition };
 
 /**
  * A type that enforces FieldValue for specified properties while preserving the
@@ -28,16 +32,34 @@ export type FsDocument<T> = Readonly<{
 
 export type FsMutableDocument<TNarrowOrFull, TFull = TNarrowOrFull> = Readonly<{
   ref: DocumentReference;
-  update: (data: UpdateData<TFull>) => Promise<WriteResult>;
+  /** The version this document was read at. Drives `{ ifUnchanged: true }`. */
+  updateTime: Timestamp;
+  createTime: Timestamp;
+
+  /**
+   * Without a precondition the write always applies. With one it resolves to
+   * undefined when the condition was not met, because losing a
+   * compare-and-swap race is an expected outcome rather than an error.
+   */
+  update(data: UpdateData<TFull>): Promise<WriteResult>;
+  update(
+    data: UpdateData<TFull>,
+    precondition: DocumentPrecondition,
+  ): Promise<WriteResult | undefined>;
+
   /**
    * The Firestore UpdateData<T> type can reject nested data that is perfectly
    * valid. In those cases you have this as an alternative based on Partial<T>
    * with FieldValue allowed for each root property.
    */
-  updateWithPartial: (
+  updateWithPartial(data: PartialWithFieldValue<TFull>): Promise<WriteResult>;
+  updateWithPartial(
     data: PartialWithFieldValue<TFull>,
-  ) => Promise<WriteResult>;
-  delete: () => Promise<WriteResult>;
+    precondition: DocumentPrecondition,
+  ): Promise<WriteResult | undefined>;
+
+  delete(): Promise<WriteResult>;
+  delete(precondition: DocumentPrecondition): Promise<WriteResult | undefined>;
 }> &
   FsDocument<TNarrowOrFull>;
 

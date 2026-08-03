@@ -1,6 +1,6 @@
 {
   "name": "@typed-firestore/server",
-  "version": "2.5.1",
+  "version": "2.6.0",
   "description": "Elegant, typed abstractions for Firestore in server environments",
   "keywords": [
     "firebase",
@@ -42,7 +42,7 @@
     "check-types": "tsc --noEmit",
     "build": "tsdown",
     "clean": "del-cli dist tsconfig.tsbuildinfo",
-    "test": "echo \"No test specified\""
+    "test": "vitest run"
   },
   "dependencies": {
     "process-in-chunks": "1.2.1"
@@ -51,7 +51,8 @@
     "@codecompose/typescript-config": "^3.0.0",
     "@types/node": "^25.2.3",
     "del-cli": "^7.0.0",
-    "tsdown": "^0.20.3"
+    "tsdown": "^0.20.3",
+    "vitest": "^4.0.18"
   },
   "peerDependencies": {
     "firebase-admin": ">=12.0",

@@ -1,4 +1,5 @@
 export * from "./add-document";
+export * from "./create-document";
 export * from "./delete-document";
 export * from "./get-document";
 export * from "./get-document-data";
@@ -7,6 +8,7 @@ export * from "./get-specific-document-data";
 export * from "./make-document";
 export * from "./make-document-human-readable";
 export * from "./make-mutable-document";
+export * from "./precondition";
 export * from "./set-document";
 export * from "./set-specific-document";
 export * from "./update-document";
