@@ -3,7 +3,7 @@ layout: home
 
 hero:
   name: Typed Firestore
-  tagline: Elegant, typed abstractions for Firestore across server, React and React Native
+  tagline: Elegant, typed abstractions for Firestore across server, edge, React and React Native
   actions:
     - theme: brand
       text: Get Started
@@ -20,7 +20,9 @@ features:
   - title: Non-Intrusive API
     details: Thin typed wrappers around the official Firebase SDKs. No lock-in, easy to adopt, and familiar to use.
   - title: Consistent Across Platforms
-    details: The same concepts and API patterns on server (firebase-admin), web (Firebase JS SDK), and mobile (React Native Firebase).
+    details: The same concepts and API patterns on server (firebase-admin), web (Firebase JS SDK), mobile (React Native Firebase), and any runtime with fetch (REST).
+  - title: Runs On The Edge
+    details: The REST package has no dependencies and needs only fetch and Web Crypto, so it works on Cloudflare Workers, Deno and Bun, where firebase-admin cannot run at all.
   - title: Collection Processing
     details: Iterate over entire collections with constant memory usage via automatic pagination. Process documents one-by-one or in chunks.
   - title: Cloud Function Helpers

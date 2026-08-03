@@ -1,0 +1,24 @@
+{
+  "extends": "@codecompose/typescript-config/library",
+  "compilerOptions": {
+    /**
+     * The other packages pick up web platform globals through their SDK's own
+     * types. This package has no dependencies at all, so it declares the
+     * platform it targets: fetch, URLSearchParams, TextEncoder, atob/btoa and
+     * crypto.subtle. The DOM lib is the only bundled lib that carries them.
+     *
+     * It also declares browser-only globals such as document and localStorage,
+     * which are absent on workerd, Deno and Node. Nothing here may use them.
+     */
+    "lib": ["ESNext", "DOM"],
+
+    /**
+     * The shared base does not enable strict mode. This package leans on
+     * `T | undefined` as its actual contract: `getDocumentMaybe` for an absent
+     * document, and an undefined result for a precondition that was not met.
+     * Without strictNullChecks those unions are not verified while writing the
+     * code, and the type-aware lint rules that depend on it are disabled.
+     */
+    "strict": true
+  }
+}

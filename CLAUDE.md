@@ -38,6 +38,12 @@ environments. Each package is published independently to NPM under the
    for Firestore with Firebase web SDK
 3. **`packages/react-native`** (`@typed-firestore/react-native`) - React Native
    hooks and utilities for Firestore with React Native Firebase
+4. **`packages/rest`** (`@typed-firestore/rest`) - Firestore over the REST API
+   for runtimes where no SDK can run (Cloudflare Workers, Deno, Bun, edge). No
+   dependencies; needs only `fetch` and `crypto.subtle`. Unlike the others it
+   owns its own wire-format conversion, auth and query building rather than
+   wrapping an SDK, so it enables `strict` in its tsconfig and carries a real
+   test suite.
 
 ### Tooling
 
