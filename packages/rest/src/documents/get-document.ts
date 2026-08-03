@@ -28,7 +28,10 @@ export async function getDocumentMaybe<T>(
 export async function getSpecificDocument<T>(
   ref: DocumentRef<T>,
 ): Promise<FsMutableDocument<T>> {
-  const response = await ref.db.request({ method: "GET", path: ref.name });
+  const response = await ref.db.request({
+    method: "GET",
+    path: ref.requestPath,
+  });
 
   return makeMutableDocument<T>(ref.db, assertWireDocument(response));
 }

@@ -12,7 +12,12 @@ export type FirestoreValue =
   | { booleanValue: boolean }
   | { nullValue: null }
   | { integerValue: string }
-  | { doubleValue: number }
+  /**
+   * Finite doubles travel as JSON numbers. The non-finite ones travel as the
+   * strings "NaN", "Infinity" and "-Infinity", because proto3 JSON has no
+   * literal for them and a raw number would serialize to `null`.
+   */
+  | { doubleValue: number | string }
   | { bytesValue: string }
   | { referenceValue: string }
   | { geoPointValue: { latitude: number; longitude: number } }

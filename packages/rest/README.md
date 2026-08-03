@@ -5,8 +5,8 @@ Crypto.
 
 This package talks to Firestore over its REST API instead of through a Firebase
 SDK, and has **no dependencies at all**. That makes it the one to reach for
-where `firebase-admin` cannot run: Cloudflare Workers, Deno, Bun, and edge
-functions.
+where `firebase-admin` does not fully run: Cloudflare Workers, Deno, edge
+functions, and Bun.
 
 The limitation is structural rather than incidental. The Firestore client inside
 `firebase-admin` reaches `@google-cloud/firestore`, which speaks gRPC over
@@ -24,13 +24,15 @@ pnpm add @typed-firestore/rest
 ```ts
 import {
   createDb,
+  createDocumentMaybe,
   getDocument,
   getDocuments,
   serviceAccount,
 } from "@typed-firestore/rest";
 
+/** Read the credential however your runtime supplies one. */
 const db = createDb({
-  auth: serviceAccount(process.env.SERVICE_ACCOUNT_JSON!),
+  auth: serviceAccount(serviceAccountJson),
 });
 
 /** No cast needed; the type argument is supplied directly. */

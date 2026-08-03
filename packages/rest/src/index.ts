@@ -4,48 +4,48 @@ export {
   serviceAccount,
   type AuthProvider,
   type ServiceAccountJson,
-} from "./client/auth";
-export { createDb, type CreateDbOptions, type Db } from "./client/create-db";
+} from "~/client/auth";
+export { createDb, type CreateDbOptions, type Db } from "~/client/create-db";
 export {
   FirestoreError,
   isAlreadyExistsError,
   isMissingIndexError,
   isNotFoundError,
   isPreconditionFailure,
-} from "./client/errors";
+} from "~/client/errors";
 
 export {
   getDocuments,
   getFirstDocument,
   type GetDocumentsOptions,
-} from "./collections/get-documents";
+} from "~/collections/get-documents";
 export {
   Query,
   type OrderByDirection,
   type WhereFilterOp,
-} from "./collections/query";
-export type { QueryBuilder, SelectedDocument } from "./collections/types";
+} from "~/collections/query";
+export type { QueryBuilder, SelectedDocument } from "~/collections/types";
 
 export {
   createDocument,
   createDocumentMaybe,
-} from "./documents/create-document";
+} from "~/documents/create-document";
 export {
   getDocument,
   getDocumentMaybe,
   getSpecificDocument,
   getSpecificDocumentMaybe,
-} from "./documents/get-document";
+} from "~/documents/get-document";
 export {
   addDocument,
   deleteDocument,
   setDocument,
   setSpecificDocument,
   updateDocument,
-} from "./documents/write-document";
+} from "~/documents/write-document";
 
-export { CollectionRef } from "./refs/collection-ref";
-export { DocumentRef } from "./refs/document-ref";
+export { CollectionRef } from "~/refs/collection-ref";
+export { DocumentRef } from "~/refs/document-ref";
 
 export type {
   DocumentPrecondition,
@@ -54,13 +54,8 @@ export type {
   Precondition,
   UpdateData,
   WriteResult,
-} from "./types";
+} from "~/types";
 
-export { PrecisionError } from "./values/decode";
-export { GeoPoint } from "./values/geo-point";
-export { Timestamp } from "./values/timestamp";
-export type {
-  FirestoreFields,
-  FirestoreValue,
-  WireDocument,
-} from "./values/wire";
+export { PrecisionError } from "~/values/decode";
+export { GeoPoint } from "~/values/geo-point";
+export { Timestamp } from "~/values/timestamp";

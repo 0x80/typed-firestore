@@ -50,7 +50,25 @@ export function createTransport(
     /** A DELETE returns an empty body, which is not parseable as JSON. */
     const text = await response.text();
 
-    return text === "" ? undefined : (JSON.parse(text) as unknown);
+    if (text === "") {
+      return undefined;
+    }
+
+    try {
+      return JSON.parse(text) as unknown;
+    } catch {
+      /**
+       * A 2xx carrying something other than JSON is usually a proxy or gateway
+       * responding in place of the API. Surface it as the package's own error
+       * rather than letting a raw SyntaxError escape.
+       */
+      throw new FirestoreError({
+        status: response.status,
+        code: "UNKNOWN",
+        message: "The Firestore response body was not valid JSON",
+        details: truncate(text),
+      });
+    }
   };
 }
 

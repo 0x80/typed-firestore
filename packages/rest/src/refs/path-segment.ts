@@ -44,6 +44,26 @@ export function assertValidPathSegment(value: string, label: string): void {
 }
 
 /**
+ * Percent-encode each segment of a relative path for use in a request URL.
+ *
+ * Firestore's identifier rules are far more permissive than a URL path is: an
+ * id may legally contain `?`, `#`, `%` or a space, any of which would otherwise
+ * start a query string, start a fragment, or form a stray escape and address a
+ * different document. The separators stay literal so the path structure
+ * survives.
+ *
+ * This is only for the wire. The logical resource name keeps the raw
+ * identifiers, because that is what Firestore stores and returns, and what a
+ * `referenceValue` has to contain.
+ */
+export function encodePathForRequest(relativePath: string): string {
+  return relativePath
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+}
+
+/**
  * A collection path may address a subcollection, so it can contain slashes, but
  * it must have an odd number of segments and each one must be valid on its own.
  */

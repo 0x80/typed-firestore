@@ -34,7 +34,7 @@ export async function setDocument<T>(
 
   const response = await ref.db.request({
     method: "PATCH",
-    path: documentRef.name,
+    path: documentRef.requestPath,
     body: {
       fields: encodeFields(data as Record<string, unknown>, {
         ignoreUndefinedProperties: ref.db.ignoreUndefinedProperties,
@@ -52,7 +52,7 @@ export async function setSpecificDocument<T>(
 ): Promise<WriteResult> {
   const response = await ref.db.request({
     method: "PATCH",
-    path: ref.name,
+    path: ref.requestPath,
     body: {
       fields: encodeFields(data as Record<string, unknown>, {
         ignoreUndefinedProperties: ref.db.ignoreUndefinedProperties,
@@ -145,7 +145,7 @@ export async function deleteDocument<T>(
   return await runWithPrecondition(async () => {
     const response = await documentRef.db.request({
       method: "DELETE",
-      path: documentRef.name,
+      path: documentRef.requestPath,
       query,
     });
 

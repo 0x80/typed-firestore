@@ -40,10 +40,11 @@ export function applyPrecondition(
 /**
  * Run a write, converting an unmet precondition into `undefined`.
  *
- * This only applies when the caller supplied a precondition. An operation that
- * carries an implicit one of its own, such as `updateDocument` requiring the
- * document to exist, still throws, because there the failure means the call was
- * wrong rather than that a race was lost.
+ * This only applies when the caller supplied a precondition. Where no
+ * precondition was passed, `updateDocument` sets an implicit existence check of
+ * its own, and a failure of that one still throws: it means the document was
+ * missing, which is a wrong call rather than a lost race. Supplying a
+ * precondition replaces that implicit check.
  */
 export async function runWithPrecondition(
   write: () => Promise<WriteResult>,
@@ -65,20 +66,23 @@ export async function runWithPrecondition(
 }
 
 /**
- * A write response carries the commit time. The REST surface is not entirely
- * consistent about the field name, so both spellings are accepted before
- * falling back to the current time.
+ * Read the commit time out of a write response.
+ *
+ * A PATCH returns the written document and carries one; a DELETE returns an
+ * empty body and carries none, which is why `updateTime` is optional. It is
+ * never fabricated from the local clock: a client-side timestamp handed back as
+ * a server commit time would be wrong by an unknown amount, and would be
+ * actively dangerous if a caller fed it into a `lastUpdateTime` precondition.
  */
 export function toWriteResult(response: unknown): WriteResult {
-  if (typeof response === "object" && response !== null) {
-    if ("updateTime" in response && typeof response.updateTime === "string") {
-      return { updateTime: Timestamp.fromRfc3339(response.updateTime) };
-    }
-
-    if ("commitTime" in response && typeof response.commitTime === "string") {
-      return { updateTime: Timestamp.fromRfc3339(response.commitTime) };
-    }
+  if (
+    typeof response === "object" &&
+    response !== null &&
+    "updateTime" in response &&
+    typeof response.updateTime === "string"
+  ) {
+    return { updateTime: Timestamp.fromRfc3339(response.updateTime) };
   }
 
-  return { updateTime: Timestamp.now() };
+  return { updateTime: undefined };
 }

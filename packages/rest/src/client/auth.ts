@@ -12,7 +12,8 @@ const DEFAULT_TOKEN_URI = "https://oauth2.googleapis.com/token";
 
 /**
  * Refresh this many seconds before the token actually expires, so a request
- * that is already in flight cannot arrive with a just-expired credential.
+ * already in flight is unlikely to arrive with a just-expired credential. A
+ * request delayed longer than this margin still can.
  */
 const REFRESH_MARGIN_SECONDS = 60;
 
@@ -39,13 +40,18 @@ export type ServiceAccountJson = {
  * Accepts either the parsed object or the raw JSON string, since the credential
  * usually arrives as an environment variable or a secret binding.
  *
- * Tokens are cached until shortly before they expire. The cache holds a string
- * and an expiry, never a connection or a stream, so it is safe to keep the
- * resulting database instance at module scope on runtimes that forbid reusing
- * I/O objects across requests.
+ * Tokens are cached until shortly before they expire, which lowers the odds of
+ * a request arriving with a stale credential without being able to rule it out
+ * entirely. The cache holds a string and an expiry, never a connection or a
+ * stream, so it is safe to keep the resulting database instance at module scope
+ * on runtimes that forbid reusing I/O objects across requests.
+ *
+ * Pass `fetch` to route the token exchange through the same instrumented or
+ * custom implementation given to `createDb`.
  */
 export function serviceAccount(
   credential: string | ServiceAccountJson,
+  options: { fetch?: typeof globalThis.fetch } = {},
 ): AuthProvider {
   const parsed =
     typeof credential === "string"
@@ -61,7 +67,11 @@ export function serviceAccount(
   async function refresh(): Promise<string> {
     const issuedAtSeconds = Math.floor(Date.now() / 1000);
     const assertion = await createSignedJwt(account, issuedAtSeconds);
-    const exchanged = await exchangeJwt(account.tokenUri, assertion);
+    const exchanged = await exchangeJwt(
+      account.tokenUri,
+      assertion,
+      options.fetch ?? globalThis.fetch,
+    );
 
     cachedToken = {
       value: exchanged.token,
@@ -188,8 +198,9 @@ async function createSignedJwt(
 async function exchangeJwt(
   tokenUri: string,
   assertion: string,
+  fetchImpl: typeof globalThis.fetch,
 ): Promise<{ token: string; expiresInSeconds: number }> {
-  const response = await fetch(tokenUri, {
+  const response = await fetchImpl(tokenUri, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({

@@ -7,7 +7,7 @@ import type {
   UpdateData,
   WriteResult,
 } from "firebase-admin/firestore";
-import type { DocumentPrecondition } from "./documents/precondition";
+import type { DocumentPrecondition } from "~/documents/precondition";
 
 export type { DocumentPrecondition };
 
@@ -37,9 +37,10 @@ export type FsMutableDocument<TNarrowOrFull, TFull = TNarrowOrFull> = Readonly<{
   createTime: Timestamp;
 
   /**
-   * Without a precondition the write always applies. With one it resolves to
-   * undefined when the condition was not met, because losing a
-   * compare-and-swap race is an expected outcome rather than an error.
+   * Without a precondition the write carries no caller-supplied concurrency
+   * condition, though the SDK still fails it when the document does not exist.
+   * With one it resolves to undefined when the condition was not met, because
+   * losing a compare-and-swap race is an expected outcome rather than an error.
    */
   update(data: UpdateData<TFull>): Promise<WriteResult>;
   update(

@@ -1,5 +1,5 @@
-import type { DocumentRef } from "./refs/document-ref";
-import type { Timestamp } from "./values/timestamp";
+import type { DocumentRef } from "~/refs/document-ref";
+import type { Timestamp } from "~/values/timestamp";
 
 /**
  * A plain, serializable document. Use this when a function reads a document but
@@ -18,7 +18,11 @@ export type FsDocument<T> = Readonly<{
 export type UpdateData<T> = Partial<T>;
 
 export type WriteResult = {
-  updateTime: Timestamp;
+  /**
+   * The server commit time. Absent on a delete, whose response body is empty.
+   * Never synthesized from the local clock.
+   */
+  updateTime: Timestamp | undefined;
 };
 
 /**
@@ -35,22 +39,25 @@ export type Precondition = { lastUpdateTime: Timestamp } | { exists: boolean };
  */
 export type DocumentPrecondition = Precondition | { ifUnchanged: true };
 
-export type FsMutableDocument<T> = Readonly<{
+export type FsMutableDocument<TNarrowOrFull, TFull = TNarrowOrFull> = Readonly<{
   id: string;
-  data: T;
-  ref: DocumentRef<T>;
+  /** Narrowed to the selected fields when the query used `select`. */
+  data: TNarrowOrFull;
+  ref: DocumentRef<TFull>;
   createTime: Timestamp;
   /** The version this document was read at. Drives `{ ifUnchanged: true }`. */
   updateTime: Timestamp;
 
   /**
-   * Without a precondition the write always applies. With one it resolves to
-   * `undefined` when the condition was not met, because losing a race is an
-   * expected outcome in a compare-and-swap loop rather than an error.
+   * Without a precondition the write carries no caller-supplied concurrency
+   * condition, though it can still fail for ordinary reasons such as the
+   * document not existing. With one it resolves to `undefined` when the
+   * condition was not met, because losing a race is an expected outcome in a
+   * compare-and-swap loop rather than an error.
    */
-  update(data: UpdateData<T>): Promise<WriteResult>;
+  update(data: UpdateData<TFull>): Promise<WriteResult>;
   update(
-    data: UpdateData<T>,
+    data: UpdateData<TFull>,
     precondition: DocumentPrecondition,
   ): Promise<WriteResult | undefined>;
 

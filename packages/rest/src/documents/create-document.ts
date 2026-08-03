@@ -1,6 +1,9 @@
 import { isAlreadyExistsError } from "~/client/errors";
 import type { CollectionRef } from "~/refs/collection-ref";
-import { assertValidPathSegment } from "~/refs/path-segment";
+import {
+  assertValidPathSegment,
+  encodePathForRequest,
+} from "~/refs/path-segment";
 import type { FsMutableDocument } from "~/types";
 import { encodeFields } from "~/values/encode";
 import { assertWireDocument, makeMutableDocument } from "./make-document";
@@ -39,8 +42,10 @@ export async function createDocument<T>(
  * Resolves to undefined when a document already exists at that id.
  *
  * This is the shape idempotent submission paths want: a repeated request
- * returns undefined rather than throwing, so a retry after a lost response is
- * indistinguishable from a first attempt at the call site.
+ * returns undefined rather than throwing, so it can treat the submission as
+ * already completed. Note that undefined proves only that the id is taken, not
+ * that this caller's earlier attempt is what took it — where ownership matters,
+ * read the document back.
  */
 export async function createDocumentMaybe<T>(
   ref: CollectionRef<T>,
@@ -64,5 +69,5 @@ export async function createDocumentMaybe<T>(
  * joined with the collection path.
  */
 export function toCollectionPath<T>(ref: CollectionRef<T>): string {
-  return `${ref.db.documentsPath}/${ref.path}`;
+  return `${ref.db.documentsPath}/${encodePathForRequest(ref.path)}`;
 }

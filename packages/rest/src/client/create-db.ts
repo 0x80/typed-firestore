@@ -61,8 +61,6 @@ export function createDb(options: CreateDbOptions): Db {
   });
 
   const context: DbContext = {
-    projectId,
-    databaseId,
     documentsPath: `projects/${projectId}/databases/${databaseId}/documents`,
     ignoreUndefinedProperties: options.ignoreUndefinedProperties ?? false,
     request,

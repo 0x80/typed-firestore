@@ -1,4 +1,5 @@
 import type { DbContext } from "~/internal/db-context";
+import { encodePathForRequest } from "./path-segment";
 
 /**
  * A typed pointer to a single document. It carries no data of its own; the
@@ -23,8 +24,17 @@ export class DocumentRef<T> {
     this.id = path.slice(path.lastIndexOf("/") + 1);
   }
 
-  /** The fully qualified resource name the REST API addresses documents by. */
+  /**
+   * The fully qualified resource name, with identifiers exactly as Firestore
+   * stores them. This is the value a `referenceValue` carries, so it must not
+   * be percent-encoded.
+   */
   get name(): string {
     return `${this.db.documentsPath}/${this.path}`;
+  }
+
+  /** The same name, encoded for use in a request URL. */
+  get requestPath(): string {
+    return `${this.db.documentsPath}/${encodePathForRequest(this.path)}`;
   }
 }

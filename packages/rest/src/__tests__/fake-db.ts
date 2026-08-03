@@ -1,10 +1,11 @@
-import { emulator } from "~/client/auth";
+import { emulator, type AuthProvider } from "~/client/auth";
 import { createDb, type Db } from "~/client/create-db";
 
 export type RecordedRequest = {
   method: string;
   url: URL;
   body: unknown;
+  headers: Record<string, string>;
 };
 
 export type FakeDb = {
@@ -21,7 +22,10 @@ export type FakeDb = {
  */
 export function createFakeDb(
   respond: (request: RecordedRequest) => unknown,
-  options: { ignoreUndefinedProperties?: boolean } = {},
+  options: {
+    ignoreUndefinedProperties?: boolean;
+    auth?: AuthProvider;
+  } = {},
 ): FakeDb {
   const requests: RecordedRequest[] = [];
 
@@ -33,6 +37,7 @@ export function createFakeDb(
       method: init?.method ?? "GET",
       url,
       body: typeof rawBody === "string" ? JSON.parse(rawBody) : undefined,
+      headers: { ...(init?.headers as Record<string, string> | undefined) },
     };
 
     requests.push(recorded);
@@ -51,7 +56,7 @@ export function createFakeDb(
 
   const db = createDb({
     projectId: "test-project",
-    auth: emulator(),
+    auth: options.auth ?? emulator(),
     fetch: fakeFetch,
     ignoreUndefinedProperties: options.ignoreUndefinedProperties,
   });

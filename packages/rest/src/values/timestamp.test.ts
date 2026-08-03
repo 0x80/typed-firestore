@@ -85,3 +85,48 @@ describe("Timestamp", () => {
     expect(new Timestamp(5, 6).isEqual(new Timestamp(5, 7))).toBe(false);
   });
 });
+
+describe("Timestamp bounds and rollover", () => {
+  it("carries a rounded nanosecond value into the next second", () => {
+    /** Rounding lands on 1e9, which is not representable; it must carry. */
+    const timestamp = Timestamp.fromMillis(-0.0000001);
+
+    expect(timestamp.nanoseconds).toBe(0);
+    expect(timestamp.seconds).toBe(0);
+  });
+
+  it("accepts the Firestore range bounds", () => {
+    expect(() => new Timestamp(-62_135_596_800, 0)).not.toThrow();
+    expect(() => new Timestamp(253_402_300_799, 0)).not.toThrow();
+  });
+
+  it("rejects seconds outside the Firestore range", () => {
+    /** toRfc3339 would emit an expanded-year form the API cannot parse back. */
+    expect(() => new Timestamp(-62_135_596_801, 0)).toThrow(RangeError);
+    expect(() => new Timestamp(253_402_300_800, 0)).toThrow(RangeError);
+  });
+
+  it("rejects a non-integer or unsafe seconds value", () => {
+    expect(() => new Timestamp(1.5, 0)).toThrow(RangeError);
+    expect(() => new Timestamp(Number.MAX_SAFE_INTEGER + 2, 0)).toThrow(
+      RangeError,
+    );
+  });
+
+  it("rejects rolled-over date components instead of normalizing them", () => {
+    /** Date would silently turn month 13 into January of the next year. */
+    expect(() => Timestamp.fromRfc3339("2026-13-01T00:00:00Z")).toThrow(
+      /out-of-range/,
+    );
+    expect(() => Timestamp.fromRfc3339("2026-02-30T00:00:00Z")).toThrow(
+      /out-of-range/,
+    );
+    expect(() => Timestamp.fromRfc3339("2026-08-03T25:00:00Z")).toThrow(
+      /out-of-range/,
+    );
+  });
+
+  it("still accepts a real leap day", () => {
+    expect(() => Timestamp.fromRfc3339("2028-02-29T00:00:00Z")).not.toThrow();
+  });
+});

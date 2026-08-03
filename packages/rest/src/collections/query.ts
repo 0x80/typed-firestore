@@ -41,10 +41,10 @@ type OrderState = {
 };
 
 export type QueryState = {
-  filters: FilterState[];
-  orderBy: OrderState[];
-  limit: number | undefined;
-  offset: number | undefined;
+  readonly filters: readonly FilterState[];
+  readonly orderBy: readonly OrderState[];
+  readonly limit: number | undefined;
+  readonly offset: number | undefined;
 };
 
 /**
@@ -214,6 +214,13 @@ function toFilterValue(filter: FilterState): FirestoreValue {
   if (!Array.isArray(filter.value)) {
     throw new TypeError(
       `The operator "${filter.op}" expects an array of values at "${filter.fieldPath}"`,
+    );
+  }
+
+  /** Firestore rejects an empty candidate list outright, so catch it here. */
+  if (filter.value.length === 0) {
+    throw new TypeError(
+      `The operator "${filter.op}" needs at least one value at "${filter.fieldPath}"`,
     );
   }
 

@@ -29,7 +29,7 @@ milliseconds. Returning a `Date` would silently discard precision on every read,
 so **reads always produce a `Timestamp`** while **writes accept either**.
 
 ```ts
-import { Timestamp } from "@typed-firestore/rest";
+import { getDocument, setDocument, Timestamp } from "@typed-firestore/rest";
 
 await setDocument(refs.users, "abc", {
   name: "Alice",
@@ -46,9 +46,10 @@ types stay shareable through the [`FsTimestamp` alias](/sharing-types).
 
 ## Numbers
 
-Firestore distinguishes 64-bit integers from doubles, and orders and indexes
-them as separate types. JavaScript does not make that distinction, so the rule
-matches firebase-admin exactly:
+Firestore stores 64-bit integers and doubles as distinct wire types, though it
+compares them as one numeric type for ordering, queries and indexes. JavaScript
+draws no such distinction on the way in, so the rule matches firebase-admin
+exactly:
 
 ```ts
 Number.isInteger(value) ? integerValue : doubleValue;

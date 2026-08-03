@@ -56,11 +56,8 @@ function encodeFieldsWithContext(
   return fields;
 }
 
-export function encodeValue(
-  value: unknown,
-  options: EncodeOptions = {},
-): FirestoreValue {
-  return encodeWithContext(value, { ...options, inArray: false }, "");
+export function encodeValue(value: unknown): FirestoreValue {
+  return encodeWithContext(value, { inArray: false }, "");
 }
 
 function encodeWithContext(
@@ -84,13 +81,14 @@ function encodeWithContext(
 
   if (typeof value === "number") {
     /**
-     * The same rule firebase-admin applies, so that a document written through
-     * this package and one written through the server package produce identical
-     * value types for the same input. That matters because Firestore orders and
-     * indexes integers and doubles as distinct types.
+     * Firestore compares integers and doubles as one numeric type, so this rule
+     * does not change ordering. It matches firebase-admin so that a document
+     * written through this package and one written through the server package
+     * carry identical value types for identical input, which keeps the stored
+     * representation stable when a project uses both.
      */
     if (!Number.isInteger(value)) {
-      return { doubleValue: value };
+      return encodeDouble(value);
     }
 
     /**
@@ -160,14 +158,48 @@ function encodeWithContext(
   }
 
   if (isPlainObject(value)) {
+    /**
+     * Descending into a map clears the array flag. Firestore only forbids an
+     * array *directly* inside an array; wrapping one in an object is the
+     * documented way to nest, so `[{ tags: ["a"] }]` is legal and must not be
+     * rejected by the guard above.
+     */
     return {
-      mapValue: { fields: encodeFieldsWithContext(value, context, path) },
+      mapValue: {
+        fields: encodeFieldsWithContext(
+          value,
+          { ...context, inArray: false },
+          path,
+        ),
+      },
     };
   }
 
   throw new TypeError(
     `Cannot encode a value of type ${describeType(value)} at ${location}`,
   );
+}
+
+/**
+ * Proto3 JSON carries the non-finite doubles as strings, because JSON has no
+ * literal for them. Emitting the raw number instead would serialize to `null`
+ * through `JSON.stringify`, silently turning NaN into a null field on the way
+ * out.
+ */
+function encodeDouble(value: number): FirestoreValue {
+  if (Number.isNaN(value)) {
+    return { doubleValue: "NaN" };
+  }
+
+  if (value === Number.POSITIVE_INFINITY) {
+    return { doubleValue: "Infinity" };
+  }
+
+  if (value === Number.NEGATIVE_INFINITY) {
+    return { doubleValue: "-Infinity" };
+  }
+
+  return { doubleValue: value };
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

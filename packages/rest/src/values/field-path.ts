@@ -21,15 +21,3 @@ export function quoteFieldName(name: string): string {
 
   return `\`${escaped}\``;
 }
-
-/**
- * Build a field path from individual segments. Each segment is escaped
- * separately, so nested paths stay addressable while unusual names stay safe.
- */
-export function buildFieldPath(segments: readonly string[]): string {
-  if (segments.length === 0) {
-    throw new Error("A Firestore field path needs at least one segment");
-  }
-
-  return segments.map((segment) => quoteFieldName(segment)).join(".");
-}

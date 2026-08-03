@@ -14,10 +14,11 @@ That makes it the package to reach for when the official SDK cannot run:
 | Bun                             | partly         | yes          |
 | Vercel / Netlify edge functions | no             | yes          |
 
-The reason firebase-admin cannot run on those is structural rather than
+Where firebase-admin does not fully run, the reason is structural rather than
 incidental. Its Firestore client reaches `@google-cloud/firestore`, which speaks
-gRPC over `node:http2` through `google-gax` and `protobufjs`. Edge runtimes do
-not provide an `http2` client, so no compatibility flag makes it work.
+gRPC over `node:http2` through `google-gax` and `protobufjs`. Edge runtimes
+provide no `http2` client at all, so no compatibility flag makes it work; Bun
+implements enough of Node to get partway, which is its own kind of trouble.
 
 ## Installation
 
@@ -30,8 +31,13 @@ pnpm add @typed-firestore/rest
 ```ts
 import { createDb, serviceAccount } from "@typed-firestore/rest";
 
+/**
+ * `serviceAccount` takes the credential as a value, so read it however your
+ * runtime supplies one: `process.env` on Node, `Deno.env.get`, or the `env`
+ * binding a Cloudflare Worker receives.
+ */
 export const db = createDb({
-  auth: serviceAccount(process.env.SERVICE_ACCOUNT_JSON!),
+  auth: serviceAccount(serviceAccountJson),
 });
 ```
 
@@ -40,6 +46,8 @@ The project id is taken from the credential, so it rarely needs to be passed.
 ### Other credentials
 
 ```ts
+import { accessToken, createDb, emulator } from "@typed-firestore/rest";
+
 /** Bring your own token, from a metadata server or Workload Identity. */
 createDb({
   projectId: "my-project",

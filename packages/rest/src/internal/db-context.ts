@@ -16,8 +16,6 @@ export type RequestOptions = {
 };
 
 export type DbContext = {
-  readonly projectId: string;
-  readonly databaseId: string;
   /** `projects/{projectId}/databases/{databaseId}/documents` */
   readonly documentsPath: string;
   /** Drop `undefined` properties on write instead of raising an error. */

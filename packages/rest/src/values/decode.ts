@@ -69,7 +69,7 @@ export function decodeValue(
   }
 
   if ("doubleValue" in value) {
-    return value.doubleValue;
+    return decodeDouble(value.doubleValue, path);
   }
 
   if ("timestampValue" in value) {
@@ -114,10 +114,38 @@ export function decodeValue(
 }
 
 /**
+ * The non-finite doubles arrive as proto3 JSON strings. Anything else in string
+ * form is a shape this package does not model, and is rejected rather than
+ * coerced, since `Number("abc")` would quietly produce NaN.
+ */
+function decodeDouble(value: number | string, path: string): number {
+  if (typeof value === "number") {
+    return value;
+  }
+
+  switch (value) {
+    case "NaN": {
+      return Number.NaN;
+    }
+    case "Infinity": {
+      return Number.POSITIVE_INFINITY;
+    }
+    case "-Infinity": {
+      return Number.NEGATIVE_INFINITY;
+    }
+    default: {
+      throw new TypeError(
+        `Unrecognized doubleValue "${value}" at "${path === "" ? "the value" : path}"`,
+      );
+    }
+  }
+}
+
+/**
  * Turn a fully qualified resource name back into a path relative to the
- * database root. A reference pointing at a different database is kept verbatim,
- * because trimming it would produce a reference that silently resolves to the
- * wrong document.
+ * database root. A reference to a different database throws: silently keeping
+ * it would hand back a `DocumentRef` bound to this database whose path resolves
+ * to a different document than the one stored.
  */
 function toRelativePath(name: string, db: DbContext): string {
   const prefix = `${db.documentsPath}/`;

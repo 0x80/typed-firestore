@@ -13,7 +13,7 @@ import type {
 } from "~/types";
 import { decodeFields } from "~/values/decode";
 import { encodeFields } from "~/values/encode";
-import { buildFieldPath } from "~/values/field-path";
+import { quoteFieldName } from "~/values/field-path";
 import { Timestamp } from "~/values/timestamp";
 import type { WireDocument } from "~/values/wire";
 
@@ -41,27 +41,27 @@ export function assertWireDocument(value: unknown): WireDocument {
   return value as WireDocument;
 }
 
-export function makeMutableDocument<T>(
+export function makeMutableDocument<TNarrowOrFull, TFull = TNarrowOrFull>(
   db: DbContext,
   wire: WireDocument,
-): FsMutableDocument<T> {
+): FsMutableDocument<TNarrowOrFull, TFull> {
   const prefix = `${db.documentsPath}/`;
   const path = wire.name.startsWith(prefix)
     ? wire.name.slice(prefix.length)
     : wire.name;
 
-  const ref = new DocumentRef<T>(db, path);
+  const ref = new DocumentRef<TFull>(db, path);
   const updateTime = Timestamp.fromRfc3339(wire.updateTime);
 
   return {
     id: ref.id,
-    data: decodeFields(wire.fields ?? {}, db) as T,
+    data: decodeFields(wire.fields ?? {}, db) as TNarrowOrFull,
     ref,
     createTime: Timestamp.fromRfc3339(wire.createTime),
     updateTime,
 
     async update(
-      data: UpdateData<T>,
+      data: UpdateData<TFull>,
       precondition?: DocumentPrecondition,
     ): Promise<WriteResult | undefined> {
       return await runWithPrecondition(
@@ -83,22 +83,22 @@ export function makeMutableDocument<T>(
       return await runWithPrecondition(async () => {
         const response = await db.request({
           method: "DELETE",
-          path: ref.name,
+          path: ref.requestPath,
           query,
         });
 
         return toWriteResult(response);
       }, precondition !== undefined);
     },
-  } as FsMutableDocument<T>;
+  } as FsMutableDocument<TNarrowOrFull, TFull>;
 }
 
 /**
  * Shared by the document method and the standalone `updateDocument`.
  *
- * The update mask is built from the keys actually supplied, so fields absent
- * from the payload are left untouched. Without it Firestore would treat the
- * write as a full replacement and drop everything not mentioned.
+ * The update mask is built from the keys actually written, so fields absent
+ * from the payload are left untouched. Without a mask Firestore treats the
+ * write as a full replacement and drops everything not mentioned.
  */
 export async function patchDocument<T>(
   db: DbContext,
@@ -108,10 +108,35 @@ export async function patchDocument<T>(
   readVersion?: Timestamp,
 ): Promise<WriteResult> {
   const record = data as Record<string, unknown>;
+
+  /**
+   * Encode first, then derive the mask from what encoding actually produced.
+   * Taking the mask from the input keys instead would name a field that
+   * `ignoreUndefinedProperties` had dropped from the body, and a field named in
+   * the mask but missing from the document is exactly how Firestore expresses
+   * a deletion.
+   */
+  const fields = encodeFields(record, {
+    ignoreUndefinedProperties: db.ignoreUndefinedProperties,
+  });
+
+  const fieldPaths = Object.keys(fields);
+
+  /**
+   * An empty mask is a full replacement, so an update that would write nothing
+   * has to be refused rather than sent. Silently wiping the document is the
+   * worst possible reading of `update({})`.
+   */
+  if (fieldPaths.length === 0) {
+    throw new TypeError(
+      `Cannot update ${ref.path} with no fields. An empty update would clear the document, so it is refused rather than sent.`,
+    );
+  }
+
   const query = new URLSearchParams();
 
-  for (const key of Object.keys(record)) {
-    query.append("updateMask.fieldPaths", buildFieldPath([key]));
+  for (const key of fieldPaths) {
+    query.append("updateMask.fieldPaths", quoteFieldName(key));
   }
 
   if (precondition) {
@@ -126,13 +151,9 @@ export async function patchDocument<T>(
 
   const response = await db.request({
     method: "PATCH",
-    path: ref.name,
+    path: ref.requestPath,
     query,
-    body: {
-      fields: encodeFields(record, {
-        ignoreUndefinedProperties: db.ignoreUndefinedProperties,
-      }),
-    },
+    body: { fields },
   });
 
   return toWriteResult(response);

@@ -26,8 +26,10 @@ export async function createDocument<T extends DocumentData>(
  * Resolves to undefined when a document already exists at that id.
  *
  * This is the shape idempotent submission paths want. A caller retrying after a
- * lost response gets undefined rather than an error, so the retry is
- * indistinguishable from a first attempt at the call site.
+ * lost response gets undefined rather than an error, so it can treat the
+ * submission as already completed. Note that undefined proves only that the id
+ * is taken, not that this caller's earlier attempt is what took it — where
+ * ownership matters, read the document back.
  */
 export async function createDocumentMaybe<T extends DocumentData>(
   ref: CollectionReference<T>,

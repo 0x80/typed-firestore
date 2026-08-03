@@ -125,23 +125,40 @@ from somewhere other than a document you are holding.
 The pattern these were added for: a batch worker that claims rows without two
 ticks doing the same work.
 
+**Claim first, then work.** The order matters more than it looks: if the work
+runs while building the update argument, every tick does the work and only the
+write is arbitrated, which is the duplication the precondition was meant to
+prevent.
+
 ```ts
 const pending = await getDocuments(refs.jobs, (query) =>
-  query.where("version", "==", 0).limit(100),
+  query.where("status", "==", "pending").limit(100),
 );
 
 for (const job of pending) {
-  const wrote = await job.update(
-    { version: 1, result: await process(job.data) },
+  /** Claim it first. Nothing expensive has happened yet. */
+  const claimed = await job.update(
+    { status: "claimed" },
     { ifUnchanged: true },
   );
 
-  if (!wrote) {
+  if (!claimed) {
     /** A concurrent tick claimed it. Not an error. */
     skipped += 1;
+    continue;
   }
+
+  /** Only now is this worker the sole owner. */
+  const result = await process(job.data);
+
+  await updateDocument(refs.jobs, job.id, { status: "done", result });
 }
 ```
+
+A worker that dies between claiming and completing leaves the job `claimed`
+forever, so a real queue also needs a way to reclaim stale work: store a
+`claimedAt` alongside the status and let a sweeper return jobs older than some
+threshold to `pending`.
 
 ### Preconditions and missing documents
 

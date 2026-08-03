@@ -1,4 +1,5 @@
 import type { CollectionRef } from "~/refs/collection-ref";
+import { encodePathForRequest } from "~/refs/path-segment";
 import type { FsMutableDocument } from "~/types";
 import {
   assertWireDocument,
@@ -33,7 +34,7 @@ export async function getDocuments<
   ref: CollectionRef<T>,
   queryFn: QueryBuilder<T>,
   options: GetDocumentsOptions<T, S> = {},
-): Promise<FsMutableDocument<SelectedDocument<T, S>>[]> {
+): Promise<FsMutableDocument<SelectedDocument<T, S>, T>[]> {
   const query = queryFn(new Query<T>());
 
   if (query.state.limit === undefined) {
@@ -54,7 +55,7 @@ export async function getDocuments<
     body: { structuredQuery },
   });
 
-  return toDocuments<SelectedDocument<T, S>>(ref, response);
+  return toDocuments<SelectedDocument<T, S>, T>(ref, response);
 }
 
 /** Returns the first match, or undefined when the query matches nothing. */
@@ -65,7 +66,7 @@ export async function getFirstDocument<
   ref: CollectionRef<T>,
   queryFn: QueryBuilder<T>,
   options: GetDocumentsOptions<T, S> = {},
-): Promise<FsMutableDocument<SelectedDocument<T, S>> | undefined> {
+): Promise<FsMutableDocument<SelectedDocument<T, S>, T> | undefined> {
   const documents = await getDocuments(
     ref,
     (query) => queryFn(query).limit(1),
@@ -85,35 +86,45 @@ function toQueryParentPath<T>(ref: CollectionRef<T>): string {
 
   return separatorIndex === -1
     ? ref.db.documentsPath
-    : `${ref.db.documentsPath}/${ref.path.slice(0, separatorIndex)}`;
+    : `${ref.db.documentsPath}/${encodePathForRequest(ref.path.slice(0, separatorIndex))}`;
 }
 
-function toDocuments<T>(
+function toDocuments<TNarrowOrFull, TFull>(
   ref: CollectionRef<unknown>,
   response: unknown,
-): FsMutableDocument<T>[] {
+): FsMutableDocument<TNarrowOrFull, TFull>[] {
   if (!Array.isArray(response)) {
     throw new TypeError("The Firestore runQuery response was not an array");
   }
 
-  const documents: FsMutableDocument<T>[] = [];
+  const documents: FsMutableDocument<TNarrowOrFull, TFull>[] = [];
 
   for (const entry of response) {
+    if (typeof entry !== "object" || entry === null) {
+      throw new TypeError("A Firestore runQuery entry was not an object");
+    }
+
     /**
-     * Firestore emits a readTime-only entry when a query matches nothing, so an
-     * entry without a document is skipped rather than treated as malformed.
+     * Firestore emits a metadata-only entry (readTime, and optionally skipped
+     * or done) when a query matches nothing. Skip exactly that shape: skipping
+     * anything without a `document` would swallow an unrecognized or error
+     * entry and report it as an empty result.
      */
-    if (
-      typeof entry !== "object" ||
-      entry === null ||
-      !("document" in entry) ||
-      entry.document === undefined
-    ) {
-      continue;
+    if (!("document" in entry) || entry.document === undefined) {
+      if ("readTime" in entry || "skippedResults" in entry || "done" in entry) {
+        continue;
+      }
+
+      throw new TypeError(
+        `A Firestore runQuery entry carried neither a document nor read metadata: ${Object.keys(entry).join(", ")}`,
+      );
     }
 
     documents.push(
-      makeMutableDocument<T>(ref.db, assertWireDocument(entry.document)),
+      makeMutableDocument<TNarrowOrFull, TFull>(
+        ref.db,
+        assertWireDocument(entry.document),
+      ),
     );
   }
 

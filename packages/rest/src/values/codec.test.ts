@@ -7,8 +7,6 @@ import { GeoPoint } from "./geo-point";
 import { Timestamp } from "./timestamp";
 
 const db: DbContext = {
-  projectId: "test-project",
-  databaseId: "(default)",
   documentsPath: "projects/test-project/databases/(default)/documents",
   ignoreUndefinedProperties: false,
   request: () => Promise.reject(new Error("not used")),
@@ -28,11 +26,25 @@ describe("encode", () => {
     expect(encodeValue(1)).toEqual({ integerValue: "1" });
   });
 
-  it("encodes non-finite doubles rather than rejecting them", () => {
-    expect(encodeValue(Number.NaN)).toEqual({ doubleValue: Number.NaN });
-    expect(encodeValue(Number.POSITIVE_INFINITY)).toEqual({
-      doubleValue: Number.POSITIVE_INFINITY,
-    });
+  it("encodes non-finite doubles as the proto JSON string forms", () => {
+    /**
+     * Asserting the in-memory object is not enough here: a raw NaN survives the
+     * equality check and then serializes to null, so the assertion goes through
+     * JSON.stringify to test what actually reaches the wire.
+     */
+    expect(JSON.stringify(encodeValue(Number.NaN))).toBe(
+      '{"doubleValue":"NaN"}',
+    );
+    expect(JSON.stringify(encodeValue(Number.POSITIVE_INFINITY))).toBe(
+      '{"doubleValue":"Infinity"}',
+    );
+    expect(JSON.stringify(encodeValue(Number.NEGATIVE_INFINITY))).toBe(
+      '{"doubleValue":"-Infinity"}',
+    );
+  });
+
+  it("keeps a finite double as a JSON number", () => {
+    expect(JSON.stringify(encodeValue(1.5))).toBe('{"doubleValue":1.5}');
   });
 
   it("refuses an integer beyond the safe range instead of emitting exponent notation", () => {
@@ -57,6 +69,15 @@ describe("encode", () => {
         values: [{ mapValue: { fields: { a: { integerValue: "1" } } } }],
       },
     });
+  });
+
+  it("allows an array inside a map inside an array", () => {
+    /**
+     * Only a *direct* array-in-array is illegal, so wrapping in an object is
+     * the documented escape. An earlier version failed to clear the nesting
+     * flag when descending into a map and rejected this legal shape.
+     */
+    expect(() => encodeFields({ items: [{ tags: ["a", "b"] }] })).not.toThrow();
   });
 
   it("rejects undefined by default and names the field path", () => {
@@ -186,5 +207,72 @@ describe("round trip", () => {
     };
 
     expect(decodeFields(encodeFields(value), db)).toEqual(value);
+  });
+});
+
+describe("wire-format fixtures", () => {
+  /**
+   * The round-trip tests above would still pass if encode and decode were wrong
+   * in compensating ways. These pin each direction against a hand-written
+   * Firestore document so a shared mistake cannot hide.
+   */
+  const wire = {
+    name: { stringValue: "Alice" },
+    age: { integerValue: "30" },
+    score: { doubleValue: 1.5 },
+    active: { booleanValue: true },
+    missing: { nullValue: null },
+    joined: { timestampValue: "2026-08-03T12:34:56.000000123Z" },
+    tags: {
+      arrayValue: { values: [{ stringValue: "a" }, { stringValue: "b" }] },
+    },
+    address: {
+      mapValue: { fields: { city: { stringValue: "Amsterdam" } } },
+    },
+  };
+
+  const domain = {
+    name: "Alice",
+    age: 30,
+    score: 1.5,
+    active: true,
+    missing: null,
+    joined: new Timestamp(1_785_760_496, 123),
+    tags: ["a", "b"],
+    address: { city: "Amsterdam" },
+  };
+
+  it("encodes to the expected wire document", () => {
+    expect(encodeFields(domain)).toEqual(wire);
+  });
+
+  it("decodes the expected wire document", () => {
+    expect(decodeFields(wire, db)).toEqual(domain);
+  });
+});
+
+describe("integer boundaries", () => {
+  it("encodes both int64 boundaries from a BigInt", () => {
+    expect(encodeValue(9_223_372_036_854_775_807n)).toEqual({
+      integerValue: "9223372036854775807",
+    });
+    expect(encodeValue(-9_223_372_036_854_775_808n)).toEqual({
+      integerValue: "-9223372036854775808",
+    });
+  });
+
+  it("accepts the safe integer boundaries as numbers", () => {
+    expect(encodeValue(Number.MAX_SAFE_INTEGER)).toEqual({
+      integerValue: "9007199254740991",
+    });
+    expect(encodeValue(Number.MIN_SAFE_INTEGER)).toEqual({
+      integerValue: "-9007199254740991",
+    });
+  });
+
+  it("decodes a value just past the safe range as a precision error", () => {
+    expect(() =>
+      decodeValue({ integerValue: "9007199254740993" }, db, "counter"),
+    ).toThrow(PrecisionError);
   });
 });

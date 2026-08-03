@@ -23,6 +23,9 @@ const RFC3339_PATTERN =
 /** Seconds since the epoch of 0001-01-01T00:00:00Z, Firestore's lower bound. */
 const MIN_FIRESTORE_SECONDS = -62_135_596_800;
 
+/** Seconds since the epoch of 9999-12-31T23:59:59Z, Firestore's upper bound. */
+const MAX_FIRESTORE_SECONDS = 253_402_300_799;
+
 export class Timestamp {
   readonly seconds: number;
   readonly nanoseconds: number;
@@ -31,6 +34,16 @@ export class Timestamp {
     if (!Number.isSafeInteger(seconds)) {
       throw new RangeError(
         `Timestamp seconds must be a safe integer, received ${String(seconds)}`,
+      );
+    }
+    /**
+     * Firestore stores timestamps between 0001-01-01 and 9999-12-31. Accepting
+     * anything wider would let `toRfc3339` emit an expanded-year form
+     * (`+275760-09-13T…`) that the API cannot parse back.
+     */
+    if (seconds < MIN_FIRESTORE_SECONDS || seconds > MAX_FIRESTORE_SECONDS) {
+      throw new RangeError(
+        `Timestamp seconds must fall between 0001-01-01 and 9999-12-31, received ${String(seconds)}`,
       );
     }
     if (
@@ -75,11 +88,17 @@ export class Timestamp {
      */
     const seconds = Math.floor(milliseconds / MILLISECONDS_PER_SECOND);
     const remainder = milliseconds - seconds * MILLISECONDS_PER_SECOND;
+    const nanoseconds = Math.round(remainder * NANOSECONDS_PER_MILLISECOND);
 
-    return new Timestamp(
-      seconds,
-      Math.round(remainder * NANOSECONDS_PER_MILLISECOND),
-    );
+    /**
+     * Rounding a remainder just under a full second lands on 1e9, which is not
+     * a representable nanosecond value. Carry it rather than throwing: an input
+     * such as -0.0000001 is perfectly finite and has an exact representation
+     * one second along.
+     */
+    return nanoseconds === NANOSECONDS_PER_SECOND
+      ? new Timestamp(seconds + 1, 0)
+      : new Timestamp(seconds, nanoseconds);
   }
 
   /**
@@ -109,6 +128,24 @@ export class Timestamp {
 
     if (Number.isNaN(milliseconds)) {
       throw new RangeError(`Not a valid RFC 3339 timestamp: ${value}`);
+    }
+
+    /**
+     * `Date` rolls over out-of-range components rather than rejecting them, so
+     * a month of 13 would silently become January of the next year. Compare
+     * what came back against what was parsed to catch that.
+     */
+    if (
+      date.getUTCFullYear() !== Number(year) ||
+      date.getUTCMonth() !== Number(month) - 1 ||
+      date.getUTCDate() !== Number(day) ||
+      date.getUTCHours() !== Number(hour) ||
+      date.getUTCMinutes() !== Number(minute) ||
+      date.getUTCSeconds() !== Number(second)
+    ) {
+      throw new RangeError(
+        `RFC 3339 timestamp has out-of-range components: ${value}`,
+      );
     }
 
     /**

@@ -4,6 +4,7 @@ import {
   DOCUMENTS_PATH,
   errorResponse,
 } from "~/__tests__/fake-db";
+import { accessToken } from "~/client/auth";
 import { getDocuments } from "~/collections/get-documents";
 import { Timestamp } from "~/values/timestamp";
 import { createDocument, createDocumentMaybe } from "./create-document";
@@ -372,5 +373,112 @@ describe("queries", () => {
         query.where("classificationVersion", "==", 0),
       ),
     ).rejects.toThrow(/explicit limit/);
+  });
+});
+
+describe("regressions", () => {
+  it("refuses an update with no fields rather than clearing the document", async () => {
+    const fake = createFakeDb(() => ({ updateTime: "2026-08-03T13:00:00Z" }));
+
+    /** An empty update mask makes Firestore replace the whole document. */
+    await expect(
+      updateDocument(fake.db.collection<Feedback>("feedback"), "abc", {}),
+    ).rejects.toThrow(/would clear the document/);
+    expect(fake.requests).toHaveLength(0);
+  });
+
+  it("keeps a dropped undefined out of the update mask", async () => {
+    const fake = createFakeDb(() => ({ updateTime: "2026-08-03T13:00:00Z" }), {
+      ignoreUndefinedProperties: true,
+    });
+
+    await updateDocument(fake.db.collection<Feedback>("feedback"), "abc", {
+      screen: "home",
+      content: undefined,
+    });
+
+    /**
+     * A field named in the mask but absent from the body is how Firestore
+     * expresses a deletion, so a dropped undefined must not appear here.
+     */
+    expect(
+      fake.lastRequest().url.searchParams.getAll("updateMask.fieldPaths"),
+    ).toEqual(["screen"]);
+  });
+
+  it("percent-encodes an id containing URL metacharacters", async () => {
+    const fake = createFakeDb(() => wireDocument("abc"));
+
+    await getDocument(fake.db.collection<Feedback>("feedback"), "a?b#c");
+
+    const request = fake.lastRequest();
+
+    /** Unencoded, the ? would start a query string and address another document. */
+    expect(request.url.pathname).toBe(
+      `/v1/${DOCUMENTS_PATH}/feedback/a%3Fb%23c`,
+    );
+    expect(request.url.searchParams.get("b")).toBeNull();
+  });
+
+  it("sends the bearer token from the auth provider", async () => {
+    const fake = createFakeDb(() => wireDocument("abc"), {
+      auth: accessToken(() => "token-abc", { projectId: "test-project" }),
+    });
+
+    await getDocument(fake.db.collection<Feedback>("feedback"), "abc");
+
+    expect(fake.lastRequest().headers["authorization"]).toBe(
+      "Bearer token-abc",
+    );
+  });
+
+  it("does not fabricate a commit time for a delete", async () => {
+    const fake = createFakeDb(() => new Response("", { status: 200 }));
+
+    const result = await deleteDocument(
+      fake.db.collection<Feedback>("feedback"),
+      "abc",
+    );
+
+    expect(result.updateTime).toBeUndefined();
+  });
+
+  it("resolves undefined when a standalone delete precondition is not met", async () => {
+    const fake = createFakeDb(() =>
+      errorResponse(409, "FAILED_PRECONDITION", "document was modified"),
+    );
+
+    await expect(
+      deleteDocument(fake.db.collection<Feedback>("feedback"), "abc", {
+        lastUpdateTime: new Timestamp(1, 0),
+      }),
+    ).resolves.toBeUndefined();
+  });
+
+  it("resolves undefined when a document delete precondition is not met", async () => {
+    const fake = createFakeDb((request) =>
+      request.method === "GET"
+        ? wireDocument("abc")
+        : errorResponse(409, "FAILED_PRECONDITION", "document was modified"),
+    );
+
+    const document = await getDocument(
+      fake.db.collection<Feedback>("feedback"),
+      "abc",
+    );
+
+    await expect(
+      document.delete({ ifUnchanged: true }),
+    ).resolves.toBeUndefined();
+  });
+
+  it("throws when a runQuery entry is neither a document nor read metadata", async () => {
+    const fake = createFakeDb(() => [{ unexpected: true }]);
+
+    await expect(
+      getDocuments(fake.db.collection<Feedback>("feedback"), (query) =>
+        query.limit(10),
+      ),
+    ).rejects.toThrow(/neither a document nor read metadata/);
   });
 });
