@@ -1,9 +1,10 @@
-import { doc } from "@react-native-firebase/firestore";
 import { useMemo } from "react";
+import { doc } from "./typed-modular";
 import type { CollectionReference, DocumentData } from "./firestore-types";
 import { useDocument_fork, useDocumentOnce_fork } from "./fork";
 import { makeMutableDocument } from "./make-mutable-document";
 import type { FsMutableDocument } from "./types.js";
+import { snapshotExists } from "./utils";
 
 export function useDocument<T extends DocumentData>(
   collectionRef: CollectionReference<T>,
@@ -21,7 +22,10 @@ export function useDocument<T extends DocumentData>(
   }
 
   const document = useMemo(
-    () => (snapshot?.exists ? makeMutableDocument(snapshot) : undefined),
+    () =>
+      snapshot && snapshotExists(snapshot)
+        ? makeMutableDocument(snapshot)
+        : undefined,
     [snapshot],
   );
 
@@ -41,7 +45,10 @@ export function useDocumentMaybe<T extends DocumentData>(
   }
 
   const document = useMemo(
-    () => (snapshot?.exists ? makeMutableDocument(snapshot) : undefined),
+    () =>
+      snapshot && snapshotExists(snapshot)
+        ? makeMutableDocument(snapshot)
+        : undefined,
     [snapshot],
   );
 
@@ -81,7 +88,10 @@ export function useDocumentOnce<T extends DocumentData>(
   }
 
   const document = useMemo(
-    () => (snapshot?.exists ? makeMutableDocument(snapshot) : undefined),
+    () =>
+      snapshot && snapshotExists(snapshot)
+        ? makeMutableDocument(snapshot)
+        : undefined,
     [snapshot],
   );
 

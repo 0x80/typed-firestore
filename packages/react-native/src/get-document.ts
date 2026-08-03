@@ -1,5 +1,6 @@
-import { doc, getDoc } from "@react-native-firebase/firestore";
-import { invariant } from "~/utils";
+import { getDoc } from "@react-native-firebase/firestore";
+import { doc } from "~/typed-modular";
+import { invariant, snapshotExists } from "~/utils";
 import type {
   CollectionReference,
   DocumentData,
@@ -17,7 +18,7 @@ export async function getDocument<T extends DocumentData>(
   const snapshot = await getDoc(doc(collectionRef, documentId));
 
   invariant(
-    snapshot.exists,
+    snapshotExists(snapshot),
     `No document available at ${collectionRef.path}/${documentId}`,
   );
 
@@ -30,7 +31,7 @@ export async function getDocumentMaybe<T extends DocumentData>(
 ) {
   const snapshot = await getDoc(doc(collectionRef, documentId));
 
-  if (!snapshot.exists) return;
+  if (!snapshotExists(snapshot)) return;
 
   return makeMutableDocument(snapshot);
 }
@@ -42,7 +43,7 @@ export async function getDocumentData<T extends DocumentData>(
   const docSnap = await getDoc(doc(collectionRef, documentId));
 
   invariant(
-    docSnap.exists,
+    snapshotExists(docSnap),
     `No document available at ${collectionRef.path}/${documentId}`,
   );
 
@@ -55,7 +56,7 @@ export async function getDocumentDataMaybe<T extends DocumentData>(
 ) {
   const snapshot = await getDoc(doc(collectionRef, documentId));
 
-  if (!snapshot.exists) return;
+  if (!snapshotExists(snapshot)) return;
 
   return snapshot.data();
 }
@@ -68,7 +69,7 @@ export async function getDocumentTx<T extends DocumentData>(
   const snapshot = await transaction.get(doc(collectionRef, documentId));
 
   invariant(
-    snapshot.exists,
+    snapshotExists(snapshot),
     `No document available at ${collectionRef.path}/${documentId}`,
   );
 
@@ -82,7 +83,7 @@ export async function getDocumentMaybeTx<T extends DocumentData>(
 ) {
   const snapshot = await transaction.get(doc(collectionRef, documentId));
 
-  if (!snapshot.exists) {
+  if (!snapshotExists(snapshot)) {
     return;
   }
 

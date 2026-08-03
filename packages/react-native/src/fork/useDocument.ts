@@ -10,6 +10,7 @@ import type {
   DocumentReference,
   DocumentSnapshot,
 } from "~/firestore-types";
+import { snapshotExists } from "~/utils";
 import {
   useIsFirestoreRefEqual,
   useIsMounted,
@@ -167,7 +168,8 @@ const getValueFromSnapshot = <T extends DocumentData>(
   initialValue?: T,
 ): T | undefined => {
   return useMemo(
-    () => (snapshot?.exists ? snapshot.data() : initialValue),
+    () =>
+      snapshot && snapshotExists(snapshot) ? snapshot.data() : initialValue,
     [snapshot, initialValue],
   );
 };

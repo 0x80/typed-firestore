@@ -1,5 +1,5 @@
 import { getDoc } from "@react-native-firebase/firestore";
-import { invariant } from "~/utils";
+import { invariant, snapshotExists } from "~/utils";
 import type {
   DocumentData,
   DocumentReference,
@@ -15,7 +15,10 @@ export async function getSpecificDocument<T extends DocumentData>(
 ) {
   const snapshot = await getDoc(documentRef);
 
-  invariant(snapshot.exists, `No document available at ${documentRef.path}`);
+  invariant(
+    snapshotExists(snapshot),
+    `No document available at ${documentRef.path}`,
+  );
 
   return makeMutableDocument(snapshot);
 }
@@ -25,7 +28,10 @@ export async function getSpecificDocumentData<T extends DocumentData>(
 ) {
   const docSnap = await getDoc(documentRef);
 
-  invariant(docSnap.exists, `No document available at ${documentRef.path}`);
+  invariant(
+    snapshotExists(docSnap),
+    `No document available at ${documentRef.path}`,
+  );
 
   return docSnap.data();
 }
@@ -36,7 +42,10 @@ export async function getSpecificDocumentTx<T extends DocumentData>(
 ) {
   const snapshot = await transaction.get(documentRef);
 
-  invariant(snapshot.exists, `No document available at ${documentRef.path}`);
+  invariant(
+    snapshotExists(snapshot),
+    `No document available at ${documentRef.path}`,
+  );
 
   return makeMutableDocumentTx(snapshot, transaction);
 }
