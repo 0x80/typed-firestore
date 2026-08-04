@@ -72,32 +72,49 @@ For each released package:
 3. An npm publish with [provenance](https://docs.npmjs.com/generating-provenance-statements)
 4. A GitHub release with generated notes
 
-The order is deliberate. Every check that can fail cheaply runs first: versions
-resolve, and the run aborts if any of its tags already exist locally or on the
-origin. Then packages publish, the commit is pushed, and only once the branch
-has settled are the tags created and pushed — tagging last means a rebase
-during the push can't strand a tag on a commit that is no longer on the branch.
-GitHub releases are created last and skip any tag that already has one, so a
-re-run fills in what is missing instead of failing.
+The order is deliberate. Every check that can fail cheaply runs first: the run
+aborts immediately if its checkout is no longer `main`'s tip — which happens
+when it queued behind another release — then versions resolve, and it aborts
+again if any of its tags already exist locally or on the origin. Then packages
+publish, the commit is pushed, and only once the branch has settled are the
+tags created and pushed — tagging last means a rebase during the push can't
+strand a tag on a commit that is no longer on the branch. GitHub releases are
+created last and skip any tag that already has one, so a re-run fills in what
+is missing instead of failing.
 
 `npm publish` is the one step that cannot be repeated for the same version,
 which is why it comes after everything cheap and before everything retryable.
 
 ### When a run fails partway
 
-If the second of three packages fails to publish, the first stays published,
-nothing is pushed, and the runner's local commit and tags are discarded.
+If the second of three packages fails to publish, the run stops there but still
+records what did happen: the packages published before the failure get their
+commit, tags and GitHub releases, and the job then fails with a summary naming
+the package that could not publish. If the very first package fails, nothing is
+published and nothing is pushed.
 
 Recovery is to re-run the workflow with only the packages that did not publish.
-Because versions resolve from the registry, the already-published package would
-resolve to a version that exists, and the failed ones resolve to exactly the
+Because versions resolve from the registry, the already-published packages
+resolve to versions that exist, and the failed ones resolve to exactly the
 versions they were going to get.
+
+A publish can also fail _after_ the registry has accepted the version — a
+timeout on the response, say. The workflow asks the registry rather than
+trusting the exit code, so a version that landed is treated as published and
+still gets its tag and release, instead of being re-published as a redundant
+version on the next run.
+
+The pushed commit carries the version bump for the package that failed too,
+since the commit is made before publishing. That is harmless — the next run
+resolves that package from the registry, which never saw the failed version,
+and rewrites its `package.json` accordingly.
 
 The push is the one place where a failure costs manual work. `main` advancing
 mid-run is the realistic cause, and the workflow handles it by rebasing and
 retrying up to three times. If it still can't push — a genuine conflict in a
-`package.json` — the packages are already on npm, and the version commit and
-its tags have to be recreated by hand. Nothing is lost; it just isn't automatic.
+`package.json` — the packages are already on npm, and tags and releases are
+still created for them, because tags push to their own refs and don't depend on
+the branch push succeeding. Only the version commit has to be recreated by hand.
 
 ## Trusted publishing
 
@@ -147,9 +164,11 @@ about the real cause.
    gh release create "@typed-firestore/<name>@<version>" --generate-notes
    ```
 
-4. Add the package to the workflow inputs and to the resolve loop's package
-   list in `.github/workflows/publish.yml` — both, since GitHub Actions has no
-   multi-select input to derive one from the other — and to the input table
-   near the top of this page.
+4. Add an input for the package to `.github/workflows/publish.yml`, named after
+   its directory with dashes replaced by underscores (`react-native` →
+   `react_native`), and add it to the input table near the top of this page.
+   The workflow discovers packages from the workspace itself, so there is no
+   second list to update — a package with no matching input is reported as a
+   warning on every run rather than silently sitting unreleasable.
 
 From then on the package releases through the workflow like the others.
