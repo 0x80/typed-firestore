@@ -53,7 +53,15 @@ Any `pre*` bump produces a prerelease version, which is published under the
 `next` dist tag instead of `latest` and marked as a prerelease on GitHub. The
 `preid` input applies to every `pre*` bump in the run, so a run mixing stable
 and prerelease bumps is fine, but two different prerelease identifiers in one
-run is not.
+run is not. A `pre*` bump with an empty `preid` is rejected rather than
+silently producing npm's numeric form (`1.2.4-0`).
+
+Because prereleases live on `next` while stable releases live on `latest`, a
+`pre*` bump resolves its base from whichever of the two tags is **higher**, and
+a stable bump always resolves from `latest`. That keeps a second prerelease
+continuing the line the first one started, rather than recomputing a version
+that is already published — and it stays correct when `next` is left behind by
+a prerelease that has since been finalized.
 
 ## What a run produces
 
@@ -64,10 +72,16 @@ For each released package:
 3. An npm publish with [provenance](https://docs.npmjs.com/generating-provenance-statements)
 4. A GitHub release with generated notes
 
-Packages are published **before** the commit and tags are pushed. This ordering
-is deliberate: `npm publish` cannot be repeated for the same version, while
-`git push` can be retried freely. If the push fails after a successful publish,
-retrying costs nothing.
+The order is deliberate. Every check that can fail cheaply runs first: versions
+resolve, and the run aborts if any of its tags already exist locally or on the
+origin. Then packages publish, the commit is pushed, and only once the branch
+has settled are the tags created and pushed — tagging last means a rebase
+during the push can't strand a tag on a commit that is no longer on the branch.
+GitHub releases are created last and skip any tag that already has one, so a
+re-run fills in what is missing instead of failing.
+
+`npm publish` is the one step that cannot be repeated for the same version,
+which is why it comes after everything cheap and before everything retryable.
 
 ### When a run fails partway
 
@@ -77,7 +91,13 @@ nothing is pushed, and the runner's local commit and tags are discarded.
 Recovery is to re-run the workflow with only the packages that did not publish.
 Because versions resolve from the registry, the already-published package would
 resolve to a version that exists, and the failed ones resolve to exactly the
-versions they were going to get. There is no state to reconcile by hand.
+versions they were going to get.
+
+The push is the one place where a failure costs manual work. `main` advancing
+mid-run is the realistic cause, and the workflow handles it by rebasing and
+retrying up to three times. If it still can't push — a genuine conflict in a
+`package.json` — the packages are already on npm, and the version commit and
+its tags have to be recreated by hand. Nothing is lost; it just isn't automatic.
 
 ## Trusted publishing
 
@@ -128,6 +148,8 @@ about the real cause.
    ```
 
 4. Add the package to the workflow inputs and to the resolve loop's package
-   list in `.github/workflows/publish.yml`.
+   list in `.github/workflows/publish.yml` — both, since GitHub Actions has no
+   multi-select input to derive one from the other — and to the input table
+   near the top of this page.
 
 From then on the package releases through the workflow like the others.

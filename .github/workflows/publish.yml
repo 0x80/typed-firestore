@@ -148,19 +148,52 @@ jobs:
               continue
             fi
 
+            # Without an identifier npm produces its numeric prerelease form
+            # (1.2.4-0) rather than the documented alpha / beta / rc.
+            if [[ "$BUMP" == pre* && -z "$PREID" ]]; then
+              echo "::error::A ${BUMP} bump requires a prerelease identifier in the preid input (alpha, beta, rc)."
+              exit 1
+            fi
+
             MANIFEST="packages/${DIR}/package.json"
             NAME=$(node -p "require('./${MANIFEST}').name")
 
-            if BASE=$(npm view "$NAME" version 2>/dev/null); then
+            # Read the whole package document in one query. Checking existence
+            # this way separates "never published" from a package whose dist
+            # tags are unusable, which a version lookup alone conflates.
+            if PACKUMENT=$(npm view "$NAME" --json 2> /tmp/npm-view-error); then
+              LATEST=$(jq -r '.["dist-tags"].latest // empty' <<< "$PACKUMENT")
+              NEXT=$(jq -r '.["dist-tags"].next // empty' <<< "$PACKUMENT")
+
+              # A version lookup follows the latest tag, which is the stable
+              # line. Prerelease bumps have to continue the next line when it
+              # is ahead, otherwise every pre* run after the first recomputes
+              # a version that is already published. Next can also lag behind
+              # latest once a prerelease is finalized, so compare rather than
+              # preferring one outright.
+              BASE="$LATEST"
+              if [[ "$BUMP" == pre* && -n "$NEXT" ]]; then
+                BASE=$(node -e '
+                  const semver = require("semver");
+                  const [latest, next] = process.argv.slice(1);
+                  process.stdout.write(!latest || semver.gt(next, latest) ? next : latest);
+                ' "$LATEST" "$NEXT")
+              fi
+
+              if [[ -z "$BASE" ]]; then
+                echo "::error::${NAME} is published but has no usable latest or next dist tag to bump from."
+                exit 1
+              fi
+
               # Bump from the published version rather than the checked-in one,
               # using npm's own semver implementation.
               (
                 cd "packages/${DIR}"
                 npm pkg set "version=${BASE}"
 
-                ARGS=("$BUMP")
-                if [[ "$BUMP" == pre* && -n "$PREID" ]]; then
-                  ARGS+=(--preid "$PREID")
+                ARGS=("$BUMP" --preid "$PREID")
+                if [[ "$BUMP" != pre* ]]; then
+                  ARGS=("$BUMP")
                 fi
 
                 npm version "${ARGS[@]}" --git-tag-version false > /dev/null
@@ -168,8 +201,9 @@ jobs:
             else
               # Distinguish a genuine "not published yet" from a network or
               # registry failure, which must not be treated as a first publish.
-              if ! npm view "$NAME" version 2>&1 | grep -q "E404"; then
+              if ! grep -q "E404" /tmp/npm-view-error; then
                 echo "::error::Failed to query npm for ${NAME}"
+                cat /tmp/npm-view-error
                 exit 1
               fi
 
@@ -204,6 +238,29 @@ jobs:
 
           echo "releases=${RELEASES}" >> "$GITHUB_OUTPUT"
 
+      # Runs before anything irreversible. A tag that already exists would
+      # otherwise only surface at the push, by which point the version is
+      # published and the release has no way to record itself.
+      - name: Check tag availability
+        env:
+          RELEASES: ${{ steps.resolve.outputs.releases }}
+        run: |
+          set -euo pipefail
+
+          git fetch origin --tags --quiet
+
+          for TAG in $(jq -r '.[].tag' <<< "$RELEASES"); do
+            if git rev-parse -q --verify "refs/tags/${TAG}" > /dev/null; then
+              echo "::error::Tag ${TAG} already exists locally."
+              exit 1
+            fi
+
+            if git ls-remote --exit-code --tags origin "refs/tags/${TAG}" > /dev/null 2>&1; then
+              echo "::error::Tag ${TAG} already exists on origin."
+              exit 1
+            fi
+          done
+
       - name: Publish summary
         env:
           RELEASES: ${{ steps.resolve.outputs.releases }}
@@ -229,6 +286,14 @@ jobs:
 
           git add packages/*/package.json
 
+          # A run that only publishes a never-published package leaves the
+          # manifests untouched, and committing nothing is an error rather
+          # than a no-op, which would abort the release before it publishes.
+          if git diff --cached --quiet; then
+            echo "No version changes to commit; the resolved versions already match the manifests."
+            exit 0
+          fi
+
           # A single-package release keeps the historical commit message
           # convention of using the tag verbatim.
           if [[ $(jq length <<< "$RELEASES") -eq 1 ]]; then
@@ -239,15 +304,11 @@ jobs:
 
           git commit -m "$MESSAGE"
 
-          for TAG in $(jq -r '.[].tag' <<< "$RELEASES"); do
-            git tag -a "$TAG" -m "$TAG"
-          done
-
-      # Publish before push: npm publish is not retryable (same version
-      # can't be published twice), while git push is idempotent. If push
-      # fails after a successful publish, it can simply be retried manually.
-      # If one package fails partway through, nothing is pushed and re-running
-      # with only the unpublished packages selected resolves the same versions.
+      # Publish before push: npm publish is not retryable (the same version
+      # can't be published twice), while pushing and tagging can be repeated
+      # or redone by hand. If one package fails partway through, nothing is
+      # pushed and re-running with only the unpublished packages selected
+      # resolves the same versions, because the base comes from the registry.
       - name: Publish to npm
         if: ${{ !inputs.dry_run }}
         env:
@@ -270,9 +331,45 @@ jobs:
             )
           done
 
-      - name: Push commit and tags
+      # Main moving during a run is the realistic push failure, and it is
+      # recoverable: rebase onto it and try again. Anything that survives
+      # three attempts needs hands, and by then the packages are published.
+      - name: Push commit
         if: ${{ !inputs.dry_run }}
-        run: git push origin HEAD --follow-tags
+        run: |
+          set -euo pipefail
+
+          for ATTEMPT in 1 2 3; do
+            if git push origin HEAD; then
+              exit 0
+            fi
+
+            echo "Push attempt ${ATTEMPT} failed, rebasing onto origin/main"
+            git fetch origin main
+
+            if ! git rebase origin/main; then
+              echo "::error::Rebase onto origin/main conflicts. The packages are published; re-create the version commit and tags by hand."
+              exit 1
+            fi
+          done
+
+          echo "::error::Could not push after 3 attempts. The packages are published; re-create the version commit and tags by hand."
+          exit 1
+
+      # Tagged after the branch settles rather than alongside the commit, so
+      # a rebase during the push can't leave the tags pointing at a commit
+      # that is no longer on the branch.
+      - name: Create and push tags
+        if: ${{ !inputs.dry_run }}
+        env:
+          RELEASES: ${{ steps.resolve.outputs.releases }}
+        run: |
+          set -euo pipefail
+
+          for TAG in $(jq -r '.[].tag' <<< "$RELEASES"); do
+            git tag -a "$TAG" -m "$TAG"
+            git push origin "refs/tags/${TAG}"
+          done
 
       - name: Create GitHub Releases
         if: ${{ !inputs.dry_run }}
@@ -287,6 +384,13 @@ jobs:
           for INDEX in $(seq 0 $((COUNT - 1))); do
             TAG=$(jq -r ".[${INDEX}].tag" <<< "$RELEASES")
             PRERELEASE=$(jq -r ".[${INDEX}].prerelease" <<< "$RELEASES")
+
+            # Idempotent so a re-run after a partial failure fills in only
+            # the releases that are missing.
+            if gh release view "$TAG" > /dev/null 2>&1; then
+              echo "Release ${TAG} already exists, skipping"
+              continue
+            fi
 
             PRERELEASE_FLAG=""
             if [[ "$PRERELEASE" == "true" ]]; then
