@@ -17,6 +17,7 @@ without boilerplate.
 | [`@typed-firestore/server`](https://www.npmjs.com/package/@typed-firestore/server)             | Server environments (firebase-admin)  |
 | [`@typed-firestore/react`](https://www.npmjs.com/package/@typed-firestore/react)               | React applications (Firebase web SDK) |
 | [`@typed-firestore/react-native`](https://www.npmjs.com/package/@typed-firestore/react-native) | React Native (React Native Firebase)  |
+| [`@typed-firestore/rest`](https://www.npmjs.com/package/@typed-firestore/rest)                 | Any runtime with fetch and Web Crypto |
 
 ## Why Typed Firestore?
 
@@ -100,6 +101,7 @@ files:
 - [Server documentation](./packages/server/README.md)
 - [React documentation](./packages/react/README.md)
 - [React Native documentation](./packages/react-native/README.md)
+- [REST documentation](./packages/rest/README.md)
 
 There is also an
 [in-depth article](https://dev.to/0x80/how-to-write-clean-typed-firestore-code-37j2)
@@ -118,6 +120,9 @@ pnpm add @typed-firestore/react
 
 # React Native (React Native Firebase)
 pnpm add @typed-firestore/react-native
+
+# REST (no dependencies; needs fetch and Web Crypto)
+pnpm add @typed-firestore/rest
 ```
 
 ## License

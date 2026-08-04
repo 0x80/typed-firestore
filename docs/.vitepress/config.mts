@@ -28,6 +28,13 @@ export default defineConfig({
         ],
       },
       {
+        text: "REST",
+        items: [
+          { text: "Getting Started", link: "/rest/getting-started" },
+          { text: "Values and Conversion", link: "/rest/values" },
+        ],
+      },
+      {
         text: "React",
         items: [
           { text: "Hooks", link: "/react/hooks" },
@@ -48,6 +55,10 @@ export default defineConfig({
         text: "Reference",
         items: [
           { text: "Document Types", link: "/reference/document-types" },
+          {
+            text: "Create and Preconditions",
+            link: "/reference/preconditions",
+          },
           { text: "Migration Guide", link: "/reference/migration" },
         ],
       },

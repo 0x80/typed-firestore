@@ -38,3 +38,17 @@ declare global {
   type FsTimestamp = Timestamp;
 }
 ```
+
+## REST
+
+```ts
+import type { Timestamp } from "@typed-firestore/rest";
+
+declare global {
+  type FsTimestamp = Timestamp;
+}
+```
+
+The REST package ships its own `Timestamp` rather than reusing an SDK's, because
+it has no SDK to reuse one from. The shape matches, so shared helpers calling
+`toDate()` or `toMillis()` work against any of the four.

@@ -13,7 +13,15 @@ pnpm add @typed-firestore/react
 
 # React Native (React Native Firebase)
 pnpm add @typed-firestore/react-native
+
+# REST (no dependencies; any runtime with fetch and Web Crypto)
+pnpm add @typed-firestore/rest
 ```
+
+The REST package is the one to pick when the official SDK cannot run at all,
+such as on Cloudflare Workers, Deno or an edge function. It has its own
+[getting started guide](/rest/getting-started), because connecting and typing
+your database work a little differently there.
 
 ## Quick Example
 

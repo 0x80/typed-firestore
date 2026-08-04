@@ -11,6 +11,7 @@ on:
           - server
           - react
           - react-native
+          - rest
       bump:
         description: "Version bump type"
         required: true
