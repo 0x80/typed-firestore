@@ -1,9 +1,10 @@
-import { getCountFromServer, query } from "@react-native-firebase/firestore";
+import { getCountFromServer } from "@react-native-firebase/firestore";
 import type {
   CollectionReference,
   DocumentData,
   QueryConstraints,
 } from "./firestore-types";
+import { query } from "./typed-modular";
 
 export async function getCollectionCount<T extends DocumentData>(
   collectionRef: CollectionReference<T>,

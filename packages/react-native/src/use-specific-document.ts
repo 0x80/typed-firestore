@@ -3,6 +3,7 @@ import type { DocumentData, DocumentReference } from "./firestore-types";
 import { useDocument_fork, useDocumentOnce_fork } from "./fork";
 import { makeMutableDocument } from "./make-mutable-document";
 import type { FsMutableDocument } from "./types.js";
+import { snapshotExists } from "./utils";
 
 export function useSpecificDocument<T extends DocumentData>(
   documentRef: DocumentReference<T>,
@@ -18,7 +19,10 @@ export function useSpecificDocument<T extends DocumentData>(
   }
 
   const document = useMemo(
-    () => (snapshot?.exists ? makeMutableDocument(snapshot) : undefined),
+    () =>
+      snapshot && snapshotExists(snapshot)
+        ? makeMutableDocument(snapshot)
+        : undefined,
     [snapshot],
   );
 
@@ -36,7 +40,10 @@ export function useSpecificDocumentMaybe<T extends DocumentData>(
   }
 
   const document = useMemo(
-    () => (snapshot?.exists ? makeMutableDocument(snapshot) : undefined),
+    () =>
+      snapshot && snapshotExists(snapshot)
+        ? makeMutableDocument(snapshot)
+        : undefined,
     [snapshot],
   );
 
@@ -72,7 +79,10 @@ export function useSpecificDocumentOnce<T extends DocumentData>(
   }
 
   const document = useMemo(
-    () => (snapshot?.exists ? makeMutableDocument(snapshot) : undefined),
+    () =>
+      snapshot && snapshotExists(snapshot)
+        ? makeMutableDocument(snapshot)
+        : undefined,
     [snapshot],
   );
 

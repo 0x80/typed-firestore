@@ -16,7 +16,7 @@ function createMockSnapshot(overrides: {
     id: overrides.id,
     data: () => overrides.data,
     ref: { path: `test/${overrides.id}` },
-    exists: overrides.data !== undefined,
+    exists: () => overrides.data !== undefined,
   } as unknown as DocumentSnapshot<TestDoc>;
 }
 

@@ -7,15 +7,15 @@ import {
 import {
   type FirestoreError,
   getCountFromServer,
-  query as firestoreQuery,
 } from "@react-native-firebase/firestore";
+import { query as firestoreQuery } from "./typed-modular";
 import type {
   QueryConstraints,
   DocumentData,
   CollectionReference,
   Query,
 } from "./firestore-types";
-import { getErrorMessage, isDefined } from "./utils";
+import { getErrorMessage } from "./utils";
 
 function useCollectionCount<T extends DocumentData>(
   collectionQuery?: Query<T>,
@@ -62,7 +62,7 @@ export function useCollectionCountOnce<T extends DocumentData>(
   ...queryConstraints: QueryConstraints
 ): [number, false] | [undefined, true] {
   const [value, , error] = useCollectionCount(
-    firestoreQuery(collectionRef, ...queryConstraints.filter(isDefined)),
+    firestoreQuery(collectionRef, ...queryConstraints),
   );
 
   if (error) {

@@ -32,10 +32,9 @@ export type SnapshotListenOptions =
   FirebaseFirestoreTypes.SnapshotListenOptions;
 
 /**
- * The @react-native-firebase/firestore query constraint functions where,
- * orderBy, limit, etc. are incorrectly typed and are missing the `_apply`
- * method.
- *
- * Exclude the `_apply` method to make the type checker happy.
+ * Before v22, the @react-native-firebase/firestore query constraint functions
+ * where, orderBy, limit, etc. were incorrectly typed and missing the `_apply`
+ * method. Exclude `_apply` so constraints from both pre- and post-v22
+ * typings are accepted.
  */
 export type QueryConstraints = (Omit<QueryConstraint, "_apply"> | undefined)[];
