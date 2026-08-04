@@ -98,6 +98,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The concurrency group serializes runs but does not refresh the
+      # checkout of one that queued behind another, so a waiting run can hold
+      # a commit that is no longer main's tip and would publish stale source
+      # before failing its push. Fail here instead, where nothing is spent.
+      - name: Verify the checkout is main's tip
+        run: |
+          set -euo pipefail
+
+          git fetch origin main --quiet
+          LOCAL=$(git rev-parse HEAD)
+          REMOTE=$(git rev-parse FETCH_HEAD)
+
+          if [[ "$LOCAL" != "$REMOTE" ]]; then
+            echo "::error::This run checked out ${LOCAL} but main is now ${REMOTE}. Re-run the workflow to release from main's tip."
+            exit 1
+          fi
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -125,24 +142,29 @@ jobs:
       - name: Resolve versions
         id: resolve
         env:
-          BUMP_SERVER: ${{ inputs.server }}
-          BUMP_REACT: ${{ inputs.react }}
-          BUMP_REACT_NATIVE: ${{ inputs.react_native }}
-          BUMP_REST: ${{ inputs.rest }}
+          BUMPS: ${{ toJSON(inputs) }}
           PREID: ${{ inputs.preid }}
         run: |
           set -euo pipefail
 
           RELEASES="[]"
 
-          for entry in \
-            "server:$BUMP_SERVER" \
-            "react:$BUMP_REACT" \
-            "react-native:$BUMP_REACT_NATIVE" \
-            "rest:$BUMP_REST"
-          do
-            DIR="${entry%%:*}"
-            BUMP="${entry#*:}"
+          # The packages come from the workspace rather than a list kept in
+          # step with the inputs. A new package still needs its own input,
+          # since workflow_dispatch has no multi-select, but forgetting one
+          # now warns instead of silently dropping the package.
+          for MANIFEST in packages/*/package.json; do
+            DIR=$(basename "$(dirname "$MANIFEST")")
+
+            # Input names cannot contain dashes.
+            KEY="${DIR//-/_}"
+
+            if ! jq -e --arg key "$KEY" 'has($key)' <<< "$BUMPS" > /dev/null; then
+              echo "::warning::packages/${DIR} has no matching workflow input and cannot be released. Add a ${KEY} input to this workflow."
+              continue
+            fi
+
+            BUMP=$(jq -r --arg key "$KEY" '.[$key]' <<< "$BUMPS")
 
             if [[ "$BUMP" == "skip" ]]; then
               continue
@@ -155,7 +177,6 @@ jobs:
               exit 1
             fi
 
-            MANIFEST="packages/${DIR}/package.json"
             NAME=$(node -p "require('./${MANIFEST}').name")
 
             # Read the whole package document in one query. Checking existence
@@ -309,33 +330,46 @@ jobs:
       # or redone by hand. If one package fails partway through, nothing is
       # pushed and re-running with only the unpublished packages selected
       # resolves the same versions, because the base comes from the registry.
+      # Failures are collected rather than raised, so that whatever did
+      # publish still gets its commit, tags and releases in the steps below.
+      # The job is failed at the end instead, once the record is recorded.
       - name: Publish to npm
+        id: publish
         if: ${{ !inputs.dry_run }}
         env:
           RELEASES: ${{ steps.resolve.outputs.releases }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
 
+          PUBLISHED="[]"
+          FAILED=""
           COUNT=$(jq length <<< "$RELEASES")
 
           for INDEX in $(seq 0 $((COUNT - 1))); do
-            DIR=$(jq -r ".[${INDEX}].dir" <<< "$RELEASES")
-            TAG=$(jq -r ".[${INDEX}].tag" <<< "$RELEASES")
-            DIST_TAG=$(jq -r ".[${INDEX}].dist_tag" <<< "$RELEASES")
+            ENTRY=$(jq -c ".[${INDEX}]" <<< "$RELEASES")
+            DIR=$(jq -r '.dir' <<< "$ENTRY")
+            TAG=$(jq -r '.tag' <<< "$ENTRY")
+            DIST_TAG=$(jq -r '.dist_tag' <<< "$ENTRY")
 
             echo "Publishing ${TAG} with dist tag ${DIST_TAG}"
 
-            (
-              cd "packages/${DIR}"
-              npm publish --provenance --tag "$DIST_TAG"
-            )
+            if ( cd "packages/${DIR}" && npm publish --provenance --tag "$DIST_TAG" ); then
+              PUBLISHED=$(jq -c --argjson entry "$ENTRY" '. + [$entry]' <<< "$PUBLISHED")
+            else
+              echo "::error::Publishing ${TAG} failed."
+              FAILED="$TAG"
+              break
+            fi
           done
+
+          echo "published=${PUBLISHED}" >> "$GITHUB_OUTPUT"
+          echo "failed=${FAILED}" >> "$GITHUB_OUTPUT"
 
       # Main moving during a run is the realistic push failure, and it is
       # recoverable: rebase onto it and try again. Anything that survives
       # three attempts needs hands, and by then the packages are published.
       - name: Push commit
-        if: ${{ !inputs.dry_run }}
+        if: ${{ !inputs.dry_run && steps.publish.outputs.published != '[]' }}
         run: |
           set -euo pipefail
 
@@ -360,9 +394,9 @@ jobs:
       # a rebase during the push can't leave the tags pointing at a commit
       # that is no longer on the branch.
       - name: Create and push tags
-        if: ${{ !inputs.dry_run }}
+        if: ${{ !inputs.dry_run && steps.publish.outputs.published != '[]' }}
         env:
-          RELEASES: ${{ steps.resolve.outputs.releases }}
+          RELEASES: ${{ steps.publish.outputs.published }}
         run: |
           set -euo pipefail
 
@@ -372,9 +406,9 @@ jobs:
           done
 
       - name: Create GitHub Releases
-        if: ${{ !inputs.dry_run }}
+        if: ${{ !inputs.dry_run && steps.publish.outputs.published != '[]' }}
         env:
-          RELEASES: ${{ steps.resolve.outputs.releases }}
+          RELEASES: ${{ steps.publish.outputs.published }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
@@ -399,3 +433,35 @@ jobs:
 
             gh release create "$TAG" --generate-notes $PRERELEASE_FLAG
           done
+
+      # Runs last so that everything published before the failure has been
+      # committed, tagged and released first. Re-running with the remaining
+      # packages selected resolves their versions from the registry, which is
+      # unchanged for anything that did not publish.
+      - name: Report a partial release
+        if: ${{ !inputs.dry_run && steps.publish.outputs.failed != '' }}
+        env:
+          PUBLISHED: ${{ steps.publish.outputs.published }}
+          FAILED: ${{ steps.publish.outputs.failed }}
+        run: |
+          set -euo pipefail
+
+          {
+            echo ""
+            echo "### Partial release"
+            echo ""
+            echo "Publishing \`${FAILED}\` failed."
+            echo ""
+
+            if [[ "$PUBLISHED" == "[]" ]]; then
+              echo "Nothing was published, so no commit, tag or release was created."
+            else
+              echo "These packages published and have been committed, tagged and released:"
+              echo ""
+              jq -r '.[] | "- \(.tag)"' <<< "$PUBLISHED"
+              echo ""
+              echo "Re-run with only the remaining packages selected."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          exit 1
