@@ -1,6 +1,6 @@
 {
   "name": "@typed-firestore/react-native",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "Elegant, typed abstractions for Firestore in React Native applications",
   "keywords": [
     "firebase",
