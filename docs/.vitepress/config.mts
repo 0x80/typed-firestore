@@ -62,6 +62,10 @@ export default defineConfig({
           { text: "Migration Guide", link: "/reference/migration" },
         ],
       },
+      {
+        text: "Contributing",
+        items: [{ text: "Releasing", link: "/contributing/releasing" }],
+      },
     ],
 
     socialLinks: [
