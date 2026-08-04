@@ -1,22 +1,62 @@
 name: Publish
 
+# One run can release any combination of packages. Each package gets its own
+# bump type, and versions are always computed from what is currently on npm
+# rather than from the checked-in package.json, so a stale or hand-edited
+# version can never produce a conflicting or skipped release.
+
 on:
   workflow_dispatch:
     inputs:
-      package:
-        description: "Package to publish"
+      server:
+        description: "Bump for @typed-firestore/server"
         required: true
         type: choice
+        default: skip
         options:
-          - server
-          - react
-          - react-native
-          - rest
-      bump:
-        description: "Version bump type"
+          - skip
+          - patch
+          - minor
+          - major
+          - prepatch
+          - preminor
+          - premajor
+          - prerelease
+      react:
+        description: "Bump for @typed-firestore/react"
         required: true
         type: choice
+        default: skip
         options:
+          - skip
+          - patch
+          - minor
+          - major
+          - prepatch
+          - preminor
+          - premajor
+          - prerelease
+      react_native:
+        description: "Bump for @typed-firestore/react-native"
+        required: true
+        type: choice
+        default: skip
+        options:
+          - skip
+          - patch
+          - minor
+          - major
+          - prepatch
+          - preminor
+          - premajor
+          - prerelease
+      rest:
+        description: "Bump for @typed-firestore/rest"
+        required: true
+        type: choice
+        default: skip
+        options:
+          - skip
           - patch
           - minor
           - major
@@ -29,7 +69,7 @@ on:
         required: false
         type: string
       dry_run:
-        description: "Dry run — skip publish, push, and release"
+        description: "Dry run — resolve versions only, skip commit, publish, push, and release"
         required: false
         type: boolean
         default: false
@@ -48,7 +88,9 @@ jobs:
     needs: checks
     runs-on: ubuntu-latest
     # Authentication is handled via OIDC trusted publishing (id-token),
-    # so no NPM_TOKEN secret is needed.
+    # so no NPM_TOKEN secret is needed. Every package name needs its own
+    # trusted publisher configured on npmjs.com pointing at this workflow,
+    # otherwise the registry rejects the publish with a misleading 404.
     permissions:
       contents: write
       id-token: write
@@ -76,76 +118,284 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Bump version
-        id: version
-        working-directory: packages/${{ inputs.package }}
+      # Resolves every selected package to a concrete version and writes it
+      # into its package.json. The base version comes from the registry, so a
+      # re-run after a partially failed release automatically computes the
+      # right versions for whatever did not get published.
+      - name: Resolve versions
+        id: resolve
         env:
-          BUMP: ${{ inputs.bump }}
+          BUMP_SERVER: ${{ inputs.server }}
+          BUMP_REACT: ${{ inputs.react }}
+          BUMP_REACT_NATIVE: ${{ inputs.react_native }}
+          BUMP_REST: ${{ inputs.rest }}
           PREID: ${{ inputs.preid }}
         run: |
-          ARGS=("$BUMP")
-          if [[ "$BUMP" == pre* && -n "$PREID" ]]; then
-            ARGS+=(--preid "$PREID")
+          set -euo pipefail
+
+          RELEASES="[]"
+
+          for entry in \
+            "server:$BUMP_SERVER" \
+            "react:$BUMP_REACT" \
+            "react-native:$BUMP_REACT_NATIVE" \
+            "rest:$BUMP_REST"
+          do
+            DIR="${entry%%:*}"
+            BUMP="${entry#*:}"
+
+            if [[ "$BUMP" == "skip" ]]; then
+              continue
+            fi
+
+            # Without an identifier npm produces its numeric prerelease form
+            # (1.2.4-0) rather than the documented alpha / beta / rc.
+            if [[ "$BUMP" == pre* && -z "$PREID" ]]; then
+              echo "::error::A ${BUMP} bump requires a prerelease identifier in the preid input (alpha, beta, rc)."
+              exit 1
+            fi
+
+            MANIFEST="packages/${DIR}/package.json"
+            NAME=$(node -p "require('./${MANIFEST}').name")
+
+            # Read the whole package document in one query. Checking existence
+            # this way separates "never published" from a package whose dist
+            # tags are unusable, which a version lookup alone conflates.
+            if PACKUMENT=$(npm view "$NAME" --json 2> /tmp/npm-view-error); then
+              LATEST=$(jq -r '.["dist-tags"].latest // empty' <<< "$PACKUMENT")
+              NEXT=$(jq -r '.["dist-tags"].next // empty' <<< "$PACKUMENT")
+
+              # A version lookup follows the latest tag, which is the stable
+              # line. Prerelease bumps have to continue the next line when it
+              # is ahead, otherwise every pre* run after the first recomputes
+              # a version that is already published. Next can also lag behind
+              # latest once a prerelease is finalized, so compare rather than
+              # preferring one outright.
+              BASE="$LATEST"
+              if [[ "$BUMP" == pre* && -n "$NEXT" ]]; then
+                BASE=$(node -e '
+                  const semver = require("semver");
+                  const [latest, next] = process.argv.slice(1);
+                  process.stdout.write(!latest || semver.gt(next, latest) ? next : latest);
+                ' "$LATEST" "$NEXT")
+              fi
+
+              if [[ -z "$BASE" ]]; then
+                echo "::error::${NAME} is published but has no usable latest or next dist tag to bump from."
+                exit 1
+              fi
+
+              # Bump from the published version rather than the checked-in one,
+              # using npm's own semver implementation.
+              (
+                cd "packages/${DIR}"
+                npm pkg set "version=${BASE}"
+
+                ARGS=("$BUMP" --preid "$PREID")
+                if [[ "$BUMP" != pre* ]]; then
+                  ARGS=("$BUMP")
+                fi
+
+                npm version "${ARGS[@]}" --git-tag-version false > /dev/null
+              )
+            else
+              # Distinguish a genuine "not published yet" from a network or
+              # registry failure, which must not be treated as a first publish.
+              if ! grep -q "E404" /tmp/npm-view-error; then
+                echo "::error::Failed to query npm for ${NAME}"
+                cat /tmp/npm-view-error
+                exit 1
+              fi
+
+              echo "::notice title=First publish::${NAME} is not on npm yet, publishing the version in package.json as-is and ignoring the requested ${BUMP} bump"
+            fi
+
+            VERSION=$(node -p "require('./${MANIFEST}').version")
+
+            if [[ "$VERSION" == *-* ]]; then
+              DIST_TAG="next"
+              PRERELEASE="true"
+            else
+              DIST_TAG="latest"
+              PRERELEASE="false"
+            fi
+
+            RELEASES=$(jq -c \
+              --arg dir "$DIR" \
+              --arg name "$NAME" \
+              --arg version "$VERSION" \
+              --arg tag "${NAME}@${VERSION}" \
+              --arg dist_tag "$DIST_TAG" \
+              --argjson prerelease "$PRERELEASE" \
+              '. + [{dir: $dir, name: $name, version: $version, tag: $tag, dist_tag: $dist_tag, prerelease: $prerelease}]' \
+              <<< "$RELEASES")
+          done
+
+          if [[ "$RELEASES" == "[]" ]]; then
+            echo "::error::No packages selected. Set at least one package to something other than skip."
+            exit 1
           fi
 
-          npm version "${ARGS[@]}" --git-tag-version false
+          echo "releases=${RELEASES}" >> "$GITHUB_OUTPUT"
 
-          VERSION=$(node -p "require('./package.json').version")
-          PACKAGE_NAME=$(node -p "require('./package.json').name")
-          TAG="${PACKAGE_NAME}@${VERSION}"
-
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "tag=${TAG}" >> $GITHUB_OUTPUT
-          echo "package_name=${PACKAGE_NAME}" >> $GITHUB_OUTPUT
-
-          if [[ "$VERSION" == *-* ]]; then
-            echo "dist_tag=next" >> $GITHUB_OUTPUT
-            echo "prerelease=true" >> $GITHUB_OUTPUT
-          else
-            echo "dist_tag=latest" >> $GITHUB_OUTPUT
-            echo "prerelease=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Commit version bump
+      # Runs before anything irreversible. A tag that already exists would
+      # otherwise only surface at the push, by which point the version is
+      # published and the release has no way to record itself.
+      - name: Check tag availability
+        env:
+          RELEASES: ${{ steps.resolve.outputs.releases }}
         run: |
-          git add packages/${{ inputs.package }}/package.json
-          git commit -m "${{ steps.version.outputs.tag }}"
-          git tag -a "${{ steps.version.outputs.tag }}" -m "${{ steps.version.outputs.tag }}"
+          set -euo pipefail
+
+          git fetch origin --tags --quiet
+
+          for TAG in $(jq -r '.[].tag' <<< "$RELEASES"); do
+            if git rev-parse -q --verify "refs/tags/${TAG}" > /dev/null; then
+              echo "::error::Tag ${TAG} already exists locally."
+              exit 1
+            fi
+
+            if git ls-remote --exit-code --tags origin "refs/tags/${TAG}" > /dev/null 2>&1; then
+              echo "::error::Tag ${TAG} already exists on origin."
+              exit 1
+            fi
+          done
 
       - name: Publish summary
+        env:
+          RELEASES: ${{ steps.resolve.outputs.releases }}
         run: |
-          echo "### Publish Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Package:** ${{ steps.version.outputs.package_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tag:** ${{ steps.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Dist tag:** ${{ steps.version.outputs.dist_tag }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Prerelease:** ${{ steps.version.outputs.prerelease }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Dry run:** ${{ inputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
+          set -euo pipefail
 
-      # Publish before push: npm publish is not retryable (same version
-      # can't be published twice), while git push is idempotent. If push
-      # fails after a successful publish, it can simply be retried manually.
-      - name: Publish to npm
-        if: ${{ inputs.dry_run == false }}
-        working-directory: packages/${{ inputs.package }}
+          {
+            echo "### Publish Summary"
+            echo ""
+            echo "- **Dry run:** ${{ inputs.dry_run }}"
+            echo ""
+            echo "| Package | Version | Tag | Dist tag |"
+            echo "| --- | --- | --- | --- |"
+            jq -r '.[] | "| \(.name) | \(.version) | \(.tag) | \(.dist_tag) |"' <<< "$RELEASES"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit version bumps
+        if: ${{ !inputs.dry_run }}
+        env:
+          RELEASES: ${{ steps.resolve.outputs.releases }}
         run: |
-          npm publish --provenance --tag ${{ steps.version.outputs.dist_tag }}
+          set -euo pipefail
 
-      - name: Push commit and tag
-        if: ${{ inputs.dry_run == false }}
-        run: git push origin HEAD --follow-tags
+          git add packages/*/package.json
 
-      - name: Create GitHub Release
-        if: ${{ inputs.dry_run == false }}
-        run: |
-          PRERELEASE_FLAG=""
-          if [[ "${{ steps.version.outputs.prerelease }}" == "true" ]]; then
-            PRERELEASE_FLAG="--prerelease"
+          # A run that only publishes a never-published package leaves the
+          # manifests untouched, and committing nothing is an error rather
+          # than a no-op, which would abort the release before it publishes.
+          if git diff --cached --quiet; then
+            echo "No version changes to commit; the resolved versions already match the manifests."
+            exit 0
           fi
 
-          gh release create "${{ steps.version.outputs.tag }}" \
-            --generate-notes \
-            $PRERELEASE_FLAG
+          # A single-package release keeps the historical commit message
+          # convention of using the tag verbatim.
+          if [[ $(jq length <<< "$RELEASES") -eq 1 ]]; then
+            MESSAGE=$(jq -r '.[0].tag' <<< "$RELEASES")
+          else
+            MESSAGE="Release $(jq -r '[.[].tag] | join(", ")' <<< "$RELEASES")"
+          fi
+
+          git commit -m "$MESSAGE"
+
+      # Publish before push: npm publish is not retryable (the same version
+      # can't be published twice), while pushing and tagging can be repeated
+      # or redone by hand. If one package fails partway through, nothing is
+      # pushed and re-running with only the unpublished packages selected
+      # resolves the same versions, because the base comes from the registry.
+      - name: Publish to npm
+        if: ${{ !inputs.dry_run }}
         env:
+          RELEASES: ${{ steps.resolve.outputs.releases }}
+        run: |
+          set -euo pipefail
+
+          COUNT=$(jq length <<< "$RELEASES")
+
+          for INDEX in $(seq 0 $((COUNT - 1))); do
+            DIR=$(jq -r ".[${INDEX}].dir" <<< "$RELEASES")
+            TAG=$(jq -r ".[${INDEX}].tag" <<< "$RELEASES")
+            DIST_TAG=$(jq -r ".[${INDEX}].dist_tag" <<< "$RELEASES")
+
+            echo "Publishing ${TAG} with dist tag ${DIST_TAG}"
+
+            (
+              cd "packages/${DIR}"
+              npm publish --provenance --tag "$DIST_TAG"
+            )
+          done
+
+      # Main moving during a run is the realistic push failure, and it is
+      # recoverable: rebase onto it and try again. Anything that survives
+      # three attempts needs hands, and by then the packages are published.
+      - name: Push commit
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+
+          for ATTEMPT in 1 2 3; do
+            if git push origin HEAD; then
+              exit 0
+            fi
+
+            echo "Push attempt ${ATTEMPT} failed, rebasing onto origin/main"
+            git fetch origin main
+
+            if ! git rebase origin/main; then
+              echo "::error::Rebase onto origin/main conflicts. The packages are published; re-create the version commit and tags by hand."
+              exit 1
+            fi
+          done
+
+          echo "::error::Could not push after 3 attempts. The packages are published; re-create the version commit and tags by hand."
+          exit 1
+
+      # Tagged after the branch settles rather than alongside the commit, so
+      # a rebase during the push can't leave the tags pointing at a commit
+      # that is no longer on the branch.
+      - name: Create and push tags
+        if: ${{ !inputs.dry_run }}
+        env:
+          RELEASES: ${{ steps.resolve.outputs.releases }}
+        run: |
+          set -euo pipefail
+
+          for TAG in $(jq -r '.[].tag' <<< "$RELEASES"); do
+            git tag -a "$TAG" -m "$TAG"
+            git push origin "refs/tags/${TAG}"
+          done
+
+      - name: Create GitHub Releases
+        if: ${{ !inputs.dry_run }}
+        env:
+          RELEASES: ${{ steps.resolve.outputs.releases }}
           GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          COUNT=$(jq length <<< "$RELEASES")
+
+          for INDEX in $(seq 0 $((COUNT - 1))); do
+            TAG=$(jq -r ".[${INDEX}].tag" <<< "$RELEASES")
+            PRERELEASE=$(jq -r ".[${INDEX}].prerelease" <<< "$RELEASES")
+
+            # Idempotent so a re-run after a partial failure fills in only
+            # the releases that are missing.
+            if gh release view "$TAG" > /dev/null 2>&1; then
+              echo "Release ${TAG} already exists, skipping"
+              continue
+            fi
+
+            PRERELEASE_FLAG=""
+            if [[ "$PRERELEASE" == "true" ]]; then
+              PRERELEASE_FLAG="--prerelease"
+            fi
+
+            gh release create "$TAG" --generate-notes $PRERELEASE_FLAG
+          done
