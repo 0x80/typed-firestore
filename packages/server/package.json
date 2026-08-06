@@ -51,7 +51,7 @@
     "@codecompose/typescript-config": "^3.0.0",
     "@types/node": "^26.1.2",
     "del-cli": "^7.0.0",
-    "tsdown": "^0.20.3",
+    "tsdown": "^0.22.14",
     "vitest": "^4.1.10"
   },
   "peerDependencies": {
