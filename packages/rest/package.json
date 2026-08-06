@@ -45,7 +45,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@codecompose/typescript-config": "^3.0.0",
+    "@codecompose/typescript-config": "^5.1.0",
     "del-cli": "^7.0.0",
     "tsdown": "^0.22.14",
     "vitest": "^4.1.10"

@@ -39,8 +39,8 @@ importers:
   packages/react:
     devDependencies:
       '@codecompose/typescript-config':
-        specifier: ^3.0.0
-        version: 3.0.0(typescript@6.0.0-beta)
+        specifier: ^5.1.0
+        version: 5.1.0(typescript@6.0.0-beta)
       '@types/react':
         specifier: ^19.2.18
         version: 19.2.18
@@ -63,8 +63,8 @@ importers:
   packages/react-native:
     devDependencies:
       '@codecompose/typescript-config':
-        specifier: 3.0.0
-        version: 3.0.0(typescript@6.0.0-beta)
+        specifier: 5.1.0
+        version: 5.1.0(typescript@6.0.0-beta)
       '@react-native-firebase/firestore':
         specifier: ~22.4.0
         version: 22.4.0(@react-native-firebase/app@23.8.8(react-native@0.84.1(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.8))(react@19.2.8))(react-native@0.84.1(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.8))
@@ -87,8 +87,8 @@ importers:
   packages/rest:
     devDependencies:
       '@codecompose/typescript-config':
-        specifier: ^3.0.0
-        version: 3.0.0(typescript@6.0.0-beta)
+        specifier: ^5.1.0
+        version: 5.1.0(typescript@6.0.0-beta)
       del-cli:
         specifier: ^7.0.0
         version: 7.0.0
@@ -112,8 +112,8 @@ importers:
         version: 1.3.0
     devDependencies:
       '@codecompose/typescript-config':
-        specifier: ^3.0.0
-        version: 3.0.0(typescript@6.0.0-beta)
+        specifier: ^5.1.0
+        version: 5.1.0(typescript@6.0.0-beta)
       '@types/node':
         specifier: ^26.1.2
         version: 26.1.2
@@ -376,8 +376,8 @@ packages:
     resolution: {integrity: sha512-Vj1jF3cPfxg7OAfoI7QnVKLoILlm2JF9pnVHrX8qx7AHMiYWT+NDAA7jChlNgRS4WTLc/fD1lXLmPixluj+3Gg==}
     engines: {node: '>=6.9.0'}
 
-  '@codecompose/typescript-config@3.0.0':
-    resolution: {integrity: sha512-CkMXAK8X2E4DUTVBTs90x/vPsZfULP38Y1UQNYLgzy3A+95ygpsTRHYwJrlrqcR2lElTeyAYONsvHPVxxfojcQ==}
+  '@codecompose/typescript-config@5.1.0':
+    resolution: {integrity: sha512-phmvoUjpQkh/ECDKts2sGhswAWvauC4QfwPdzi4+9l/JUxHDC26RC3qTq1flnvC6thLELUWIJd02OZtk8k8AOQ==}
     peerDependencies:
       typescript: '>=6.0.0'
 
@@ -4843,7 +4843,7 @@ snapshots:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
 
-  '@codecompose/typescript-config@3.0.0(typescript@6.0.0-beta)':
+  '@codecompose/typescript-config@5.1.0(typescript@6.0.0-beta)':
     dependencies:
       typescript: 6.0.0-beta
 

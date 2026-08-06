@@ -42,7 +42,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@codecompose/typescript-config": "3.0.0",
+    "@codecompose/typescript-config": "5.1.0",
     "@react-native-firebase/firestore": "~22.4.0",
     "@types/react": "^19.2.18",
     "del-cli": "^7.0.0",
