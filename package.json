@@ -20,11 +20,11 @@
     "husky": "^9.1.7",
     "lint-staged": "^17.3.0",
     "oxfmt": "^0.34.0",
-    "oxlint": "^1.49.0",
-    "oxlint-tsgolint": "^0.14.1",
+    "oxlint": "^1.77.0",
+    "oxlint-tsgolint": "^7.0.2001",
     "semver": "^7.8.5",
     "turbo": "^2.10.8",
-    "typescript": "6.0.0-beta",
+    "typescript": "7.0.2",
     "vitepress": "^1.6.3"
   },
   "lint-staged": {
