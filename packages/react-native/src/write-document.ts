@@ -6,15 +6,13 @@ import {
   type UpdateData,
   type WithFieldValue,
   type PartialWithFieldValue,
-  type FirebaseFirestoreTypes,
+  type SetOptions,
 } from "@react-native-firebase/firestore";
 import type {
   CollectionReference,
   DocumentData,
   DocumentReference,
 } from "./firestore-types";
-
-type SetOptions = FirebaseFirestoreTypes.SetOptions;
 
 export function setDocument<T extends DocumentData>(
   collectionRef: CollectionReference<T>,
