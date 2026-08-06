@@ -1,9 +1,13 @@
 /**
- * The modular typings that ship with @react-native-firebase/firestore v22+
- * declare two-generic signatures (AppModelType, DbModelType) against the
- * single-generic FirebaseFirestoreTypes interfaces, which makes generic
- * inference collapse to unknown/DocumentData. Wrap the affected functions so
- * the generics stay pinned to the input reference.
+ * Wrappers that pin the generics of the modular doc, getDocs and query
+ * functions to the input reference.
+ *
+ * These exist because the v22 modular typings declared two-generic signatures
+ * (AppModelType, DbModelType) against the single-generic
+ * FirebaseFirestoreTypes interfaces, which collapsed inference to
+ * unknown/DocumentData. v26 removed that namespace and its modular types are
+ * consistently two-generic, so inference no longer collapses and these
+ * wrappers are likely redundant. Removing them is a separate change.
  */
 import {
   doc as doc_untyped,

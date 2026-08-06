@@ -27,7 +27,8 @@ export type DocumentReference<T extends DocumentData = DocumentData> =
 export type CollectionReference<T extends DocumentData = DocumentData> =
   CollectionReferenceRaw<T>;
 
-export type DocumentSnapshot<T extends DocumentData> = DocumentSnapshotRaw<T>;
+export type DocumentSnapshot<T extends DocumentData = DocumentData> =
+  DocumentSnapshotRaw<T>;
 
 export type Query<T extends DocumentData = DocumentData> = QueryRaw<T>;
 
