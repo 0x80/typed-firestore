@@ -48,6 +48,6 @@
     "@codecompose/typescript-config": "^3.0.0",
     "del-cli": "^7.0.0",
     "tsdown": "^0.20.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.10"
   }
 }

@@ -23,7 +23,7 @@
     "oxlint": "^1.49.0",
     "oxlint-tsgolint": "^0.14.1",
     "semver": "^7.8.5",
-    "turbo": "^2.8.10",
+    "turbo": "^2.10.8",
     "typescript": "6.0.0-beta",
     "vitepress": "^1.6.3"
   },
