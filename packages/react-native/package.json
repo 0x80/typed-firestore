@@ -42,16 +42,17 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@codecompose/typescript-config": "3.0.0",
-    "@react-native-firebase/firestore": "~22.4.0",
-    "@types/react": "^19.2.14",
+    "@codecompose/typescript-config": "5.1.0",
+    "@react-native-firebase/app": "~26.1.0",
+    "@react-native-firebase/firestore": "~26.1.0",
+    "@types/react": "^19.2.18",
     "del-cli": "^7.0.0",
-    "react": "^19.2.4",
-    "tsdown": "^0.20.3",
-    "vitest": "^4.0.18"
+    "react": "^19.2.8",
+    "tsdown": "^0.22.14",
+    "vitest": "^4.1.10"
   },
   "peerDependencies": {
-    "@react-native-firebase/firestore": ">=20.0",
+    "@react-native-firebase/firestore": ">=25.0",
     "react": ">=16.8.0"
   },
   "engines": {
