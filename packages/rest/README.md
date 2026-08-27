@@ -3,6 +3,8 @@
 Elegant, typed abstractions for Firestore on any runtime with `fetch` and Web
 Crypto.
 
+**📖 [Read the documentation](https://typed-firestore.codecompose.dev)**
+
 This package talks to Firestore over its REST API instead of through a Firebase
 SDK, and has **no dependencies at all**. That makes it the one to reach for
 where `firebase-admin` does not fully run: Cloudflare Workers, Deno, edge

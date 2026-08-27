@@ -1,3 +1,7 @@
+---
+description: "Query Firestore collections on the server with firebase-admin and get fully typed documents back, without casting or boilerplate."
+---
+
 # Server - Collections
 
 Functions for querying Firestore collections on the server.

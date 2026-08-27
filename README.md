@@ -3,12 +3,15 @@
 Elegant, typed abstractions for Firestore. Write clean, strongly-typed code
 without boilerplate.
 
+**📖 [Read the documentation](https://typed-firestore.codecompose.dev)**
+
 > This repository consolidates what were previously three separate packages into
 > a single monorepo. The original repositories
 > ([typed-firestore-server](https://github.com/0x80/typed-firestore-server),
 > [typed-firestore-react](https://github.com/0x80/typed-firestore-react), and
 > [typed-firestore-react-native](https://github.com/0x80/typed-firestore-react-native))
-> are now archived. The NPM packages and their names remain unchanged.
+> are deprecated and no longer maintained. The NPM packages and their names
+> remain unchanged.
 
 ## Packages
 

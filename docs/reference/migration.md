@@ -1,3 +1,7 @@
+---
+description: "Migration guide for Typed Firestore, including the server v2 rename of InTransaction to Tx."
+---
+
 # Migration Guide
 
 ## Server: Migrating to v2

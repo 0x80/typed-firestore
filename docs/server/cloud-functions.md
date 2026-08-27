@@ -1,3 +1,7 @@
+---
+description: "Get typed Firestore data out of 2nd gen Firebase Cloud Functions events with simple typed helper functions."
+---
+
 # Server - Cloud Functions
 
 Helper functions for getting typed data from 2nd gen cloud function events.

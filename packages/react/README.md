@@ -3,6 +3,8 @@
 Elegant, typed abstractions for handling Firestore documents in React
 applications.
 
+**📖 [Read the documentation](https://typed-firestore.codecompose.dev)**
+
 This library is based on the same concepts as
 [@typed-firestore/server](https://github.com/0x80/typed-firestore-server),
 allowing your project to be consistent in both server and client code.

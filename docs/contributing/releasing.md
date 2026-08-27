@@ -1,3 +1,7 @@
+---
+description: "How releases work in the Typed Firestore monorepo: every package is versioned and published independently."
+---
+
 # Releasing
 
 Every package in this monorepo is versioned and published independently. There

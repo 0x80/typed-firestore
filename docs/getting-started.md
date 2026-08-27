@@ -1,3 +1,7 @@
+---
+description: "Install @typed-firestore/server, react, react-native or rest and set up typed Firestore collection references in a TypeScript project."
+---
+
 # Getting Started
 
 ## Installation

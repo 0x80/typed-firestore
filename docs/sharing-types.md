@@ -1,3 +1,7 @@
+---
+description: "How to share Firestore document types between server and client code, and work around the incompatible Timestamp types in the web and admin SDKs."
+---
+
 # Sharing Types Between Server and Client
 
 When you share your document types between your server and client code, you
