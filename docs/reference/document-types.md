@@ -1,3 +1,7 @@
+---
+description: "FsDocument and FsMutableDocument, the typed document types every Typed Firestore function returns, combining document data and id."
+---
+
 # Document Types
 
 All API functions return a form of `FsDocument<T>`, which conveniently combines

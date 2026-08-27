@@ -1,3 +1,7 @@
+---
+description: "Define typed Firestore collection references once and let every Typed Firestore function infer its types, including subcollections."
+---
+
 # Typing Your Database
 
 The core idea behind Typed Firestore is that you define typed collection

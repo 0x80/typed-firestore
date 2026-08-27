@@ -1,3 +1,7 @@
+---
+description: "@typed-firestore/rest talks to Firestore over the REST API with zero dependencies, for Cloudflare Workers, Deno, Bun and other edge runtimes."
+---
+
 # REST: Getting Started
 
 `@typed-firestore/rest` talks to Firestore over its REST API instead of through

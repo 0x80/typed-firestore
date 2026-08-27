@@ -1,3 +1,7 @@
+---
+description: "Process every document in a Firestore collection with constant memory usage via automatic pagination, one by one or in chunks."
+---
+
 # Server - Processing Collections
 
 Functions for processing many or all documents in a collection. Useful for

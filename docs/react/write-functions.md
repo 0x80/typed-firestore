@@ -1,3 +1,7 @@
+---
+description: "Typed create, update and delete functions for Firestore in React, for when you already know the document path."
+---
+
 # React - Write Functions
 
 Standalone functions for creating, updating, and deleting documents without

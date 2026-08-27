@@ -2,6 +2,8 @@
 
 Elegant, typed abstractions for Firestore in server environments.
 
+**📖 [Read the documentation](https://typed-firestore.codecompose.dev)**
+
 - A non-intrusive, use-to-use API without lock-in
 - Write clean, strongly-typed code, without boilerplate
 - Get correctly typed data when using select statements

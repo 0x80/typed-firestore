@@ -1,3 +1,7 @@
+---
+description: "Non-hook typed fetch functions for Firestore in React Native, for reading documents and collections outside of components."
+---
+
 # React Native - Functions
 
 Non-hook fetch functions for use outside of components.

@@ -1,3 +1,7 @@
+---
+description: "Typed React hooks for subscribing to Firestore documents and collections with the Firebase web SDK, including useDocument and useCollection."
+---
+
 # React - Hooks
 
 Typed hooks for subscribing to Firestore documents and collections in React

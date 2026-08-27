@@ -1,3 +1,7 @@
+---
+description: "Typed React Native hooks for subscribing to Firestore documents and collections, backed by React Native Firebase."
+---
+
 # React Native - Hooks
 
 Typed hooks for subscribing to Firestore documents and collections in React

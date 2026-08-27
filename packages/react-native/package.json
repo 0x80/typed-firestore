@@ -12,6 +12,7 @@
     "typed-firestore",
     "typescript"
   ],
+  "homepage": "https://typed-firestore.codecompose.dev",
   "license": "Apache-2.0",
   "author": "Thijs Koerselman",
   "repository": {

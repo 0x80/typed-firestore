@@ -1,5 +1,6 @@
 ---
 layout: home
+description: "Elegant, typed abstractions for Firestore in TypeScript. One consistent API across firebase-admin, the Firebase web SDK, React Native Firebase and the REST API."
 
 hero:
   name: Typed Firestore

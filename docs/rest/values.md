@@ -1,3 +1,7 @@
+---
+description: "How @typed-firestore/rest converts between JavaScript values and Firestore's tagged-union REST wire format."
+---
+
 # REST: Values and Conversion
 
 The SDK-based packages hand data conversion to the Firebase SDK. This package

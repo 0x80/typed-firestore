@@ -1,3 +1,7 @@
+---
+description: "Non-hook typed fetch functions for Firestore in React, for use with React Query or anywhere outside a component."
+---
+
 # React - Functions
 
 Non-hook fetch functions for use outside of components. Useful when you want to

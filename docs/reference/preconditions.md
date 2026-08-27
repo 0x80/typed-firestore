@@ -1,3 +1,7 @@
+---
+description: "Typed Firestore create and precondition support on the server and REST packages, and why they are absent from React and React Native."
+---
+
 # Create and Preconditions
 
 Two capabilities that exist on the **server** and **REST** packages only.

@@ -1,3 +1,7 @@
+---
+description: "Why the Typed Firestore React hooks throw errors instead of returning them, and how to handle Firestore failures with error boundaries."
+---
+
 # React - Error Handling
 
 The hooks in this library throw errors instead of returning them. This is not

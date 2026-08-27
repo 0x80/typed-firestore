@@ -1,3 +1,7 @@
+---
+description: "Read, create, update and delete single Firestore documents on the server with firebase-admin and full TypeScript type inference."
+---
+
 # Server - Documents
 
 Functions for handling single Firestore documents on the server.

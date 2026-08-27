@@ -1,11 +1,62 @@
 import { defineConfig } from "vitepress";
 
+const hostname = "https://typed-firestore.codecompose.dev";
+const siteTitle = "Typed Firestore";
+const siteDescription =
+  "Elegant, typed abstractions for Firestore across server, React and React Native";
+const ogImage = `${hostname}/og-image.png`;
+
 export default defineConfig({
-  title: "Typed Firestore",
-  description:
-    "Elegant, typed abstractions for Firestore across server, React and React Native",
+  title: siteTitle,
+  description: siteDescription,
   base: "/",
   cleanUrls: true,
+  lastUpdated: true,
+
+  sitemap: { hostname },
+
+  head: [
+    ["link", { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" }],
+    /** Ownership proof for the Google Search Console property. Do not remove. */
+    [
+      "meta",
+      {
+        name: "google-site-verification",
+        content: "hMenEzHWcyIRIRNlPMUI5FQKKFiiuxO2ys029811fy4",
+      },
+    ],
+    ["meta", { property: "og:type", content: "website" }],
+    ["meta", { property: "og:site_name", content: siteTitle }],
+    ["meta", { property: "og:image", content: ogImage }],
+    ["meta", { property: "og:image:width", content: "1200" }],
+    ["meta", { property: "og:image:height", content: "630" }],
+    ["meta", { name: "twitter:card", content: "summary_large_image" }],
+    ["meta", { name: "twitter:image", content: ogImage }],
+  ],
+
+  /**
+   * Emit a canonical URL and page-specific social tags for every page. Without
+   * these, search engines have to guess which URL is authoritative and every
+   * shared link renders with the same generic preview.
+   */
+  transformPageData(pageData) {
+    const path = pageData.relativePath
+      .replace(/(^|\/)index\.md$/, "$1")
+      .replace(/\.md$/, "");
+    const url = `${hostname}/${path}`;
+    const title = path === "" ? siteTitle : `${pageData.title} | ${siteTitle}`;
+    const description = pageData.description || siteDescription;
+
+    pageData.frontmatter.head ??= [];
+    pageData.frontmatter.head.push(
+      ["link", { rel: "canonical", href: url }],
+      ["meta", { property: "og:url", content: url }],
+      ["meta", { property: "og:title", content: title }],
+      ["meta", { property: "og:description", content: description }],
+      ["meta", { name: "twitter:title", content: title }],
+      ["meta", { name: "twitter:description", content: description }],
+    );
+  },
 
   themeConfig: {
     sidebar: [
