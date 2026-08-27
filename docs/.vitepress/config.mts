@@ -17,6 +17,14 @@ export default defineConfig({
 
   head: [
     ["link", { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" }],
+    /** Ownership proof for the Google Search Console property. Do not remove. */
+    [
+      "meta",
+      {
+        name: "google-site-verification",
+        content: "hMenEzHWcyIRIRNlPMUI5FQKKFiiuxO2ys029811fy4",
+      },
+    ],
     ["meta", { property: "og:type", content: "website" }],
     ["meta", { property: "og:site_name", content: siteTitle }],
     ["meta", { property: "og:image", content: ogImage }],
