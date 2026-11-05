@@ -12,3 +12,4 @@ export * from "./use-document";
 export * from "./use-specific-document";
 export * from "./utils";
 export * from "./write-document";
+export * from "./firestore";

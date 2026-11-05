@@ -15,6 +15,7 @@ import type {
 } from "@react-native-firebase/firestore";
 
 export type {
+  FirestoreError,
   SnapshotListenOptions,
   Transaction,
 } from "@react-native-firebase/firestore";

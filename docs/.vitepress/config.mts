@@ -100,6 +100,7 @@ export default defineConfig({
           { text: "Hooks", link: "/react-native/hooks" },
           { text: "Functions", link: "/react-native/functions" },
           { text: "Write Functions", link: "/react-native/write-functions" },
+          { text: "Middleware", link: "/react-native/middleware" },
         ],
       },
       {

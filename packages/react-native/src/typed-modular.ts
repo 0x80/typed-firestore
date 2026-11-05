@@ -1,5 +1,5 @@
 /**
- * Wrappers that pin the generics of the modular doc, getDocs and query
+ * Wrappers that pin the generics of the modular doc and query
  * functions to the input reference.
  *
  * These exist because the v22 modular typings declared two-generic signatures
@@ -11,7 +11,6 @@
  */
 import {
   doc as doc_untyped,
-  getDocs as getDocs_untyped,
   query as query_untyped,
   type QueryConstraint,
 } from "@react-native-firebase/firestore";
@@ -21,7 +20,6 @@ import type {
   DocumentReference,
   Query,
   QueryConstraints,
-  QuerySnapshot,
 } from "./firestore-types";
 import { isDefined } from "./utils";
 
@@ -30,12 +28,6 @@ export function doc<T extends DocumentData>(
   documentId: string,
 ): DocumentReference<T> {
   return doc_untyped(collectionRef, documentId) as DocumentReference<T>;
-}
-
-export function getDocs<T extends DocumentData>(
-  baseQuery: Query<T>,
-): Promise<QuerySnapshot<T>> {
-  return getDocs_untyped(baseQuery) as Promise<QuerySnapshot<T>>;
 }
 
 export function query<T extends DocumentData>(

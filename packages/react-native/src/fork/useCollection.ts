@@ -1,12 +1,11 @@
-import {
-  type FirestoreError,
-  getDocs,
-  getDocsFromCache,
-  getDocsFromServer,
-  onSnapshot,
-} from "@react-native-firebase/firestore";
 import { useCallback, useEffect, useMemo } from "react";
-import type { DocumentData, Query, QuerySnapshot } from "~/firestore-types";
+import { getDocs, onDocsSnapshot } from "~/firestore";
+import type {
+  DocumentData,
+  FirestoreError,
+  Query,
+  QuerySnapshot,
+} from "~/firestore-types";
 import {
   useIsFirestoreQueryEqual,
   useIsMounted,
@@ -18,7 +17,6 @@ import type {
   CollectionHook,
   CollectionOnceHook,
   DataOptions,
-  GetOptions,
   OnceDataOptions,
   OnceOptions,
   Options,
@@ -37,20 +35,14 @@ export function useCollection_fork<T extends DocumentData>(
   useEffect(() => {
     if (!ref.current) {
       setValue(undefined);
-      return;
+      return undefined;
     }
-    const unsubscribe = options?.snapshotListenOptions
-      ? onSnapshot(
-          ref.current,
-          options.snapshotListenOptions,
-          setValue,
-          setError,
-        )
-      : onSnapshot(ref.current, setValue, setError);
-
-    return () => {
-      unsubscribe();
-    };
+    return onDocsSnapshot(
+      ref.current,
+      options?.snapshotListenOptions,
+      setValue,
+      setError,
+    );
   }, [ref.current]);
 
   return [value!, loading, error];
@@ -73,10 +65,8 @@ export function useCollectionOnce_fork<T extends DocumentData>(
         setValue(undefined);
         return;
       }
-      const get = getDocsFnFromGetOptions(opts?.getOptions);
-
       try {
-        const result = await get(q);
+        const result = await getDocs(q, opts?.getOptions?.source);
         if (isMounted.current) {
           setValue(result);
         }
@@ -130,18 +120,4 @@ const getValuesFromSnapshots = <T extends DocumentData>(
   snapshots: QuerySnapshot<T> | undefined,
 ): T[] | undefined => {
   return useMemo(() => snapshots?.docs.map((doc) => doc.data()), [snapshots]);
-};
-
-const getDocsFnFromGetOptions = (
-  { source }: GetOptions = { source: "default" },
-) => {
-  switch (source) {
-    default:
-    case "default":
-      return getDocs;
-    case "cache":
-      return getDocsFromCache;
-    case "server":
-      return getDocsFromServer;
-  }
 };

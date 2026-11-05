@@ -1,4 +1,5 @@
 import type { FirestoreError } from "@react-native-firebase/firestore";
+import type { GetSource } from "~/firestore/types";
 import type {
   DocumentData,
   DocumentSnapshot,
@@ -17,7 +18,7 @@ export type OnceOptions = {
   getOptions?: GetOptions;
 };
 export type GetOptions = {
-  source?: "default" | "server" | "cache";
+  source?: GetSource;
 };
 export type OnceDataOptions = OnceOptions;
 

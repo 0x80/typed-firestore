@@ -1,4 +1,4 @@
-import { getDoc } from "@react-native-firebase/firestore";
+import { getDoc } from "~/firestore";
 import { invariant, snapshotExists } from "~/utils";
 import type {
   DocumentData,
