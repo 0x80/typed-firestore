@@ -1,15 +1,10 @@
-import {
-  getDoc,
-  getDocFromCache,
-  getDocFromServer,
-  onSnapshot,
-} from "@react-native-firebase/firestore";
 import { useCallback, useEffect, useMemo } from "react";
 import type {
   DocumentData,
   DocumentReference,
   DocumentSnapshot,
 } from "~/firestore-types";
+import { getDoc, onDocSnapshot } from "~/firestore";
 import { snapshotExists } from "~/utils";
 import {
   useIsFirestoreRefEqual,
@@ -22,7 +17,6 @@ import type {
   DocumentDataOnceHook,
   DocumentHook,
   DocumentOnceHook,
-  GetOptions,
   OnceDataOptions,
   OnceOptions,
   Options,
@@ -41,28 +35,18 @@ export const useDocument_fork = <T extends DocumentData>(
   useEffect(() => {
     if (!ref.current) {
       setValue(undefined);
-      return;
+      return undefined;
     }
-    const unsubscribe = options?.snapshotListenOptions
-      ? onSnapshot(
-          ref.current,
-          options.snapshotListenOptions,
-          setValue,
-          (err: Error) => {
-            if (err instanceof Error) {
-              setError(err);
-            }
-          },
-        )
-      : onSnapshot(ref.current, setValue, (err: Error) => {
-          if (err instanceof Error) {
-            setError(err);
-          }
-        });
-
-    return () => {
-      unsubscribe();
-    };
+    return onDocSnapshot(
+      ref.current,
+      options?.snapshotListenOptions,
+      setValue,
+      (err: Error) => {
+        if (err instanceof Error) {
+          setError(err);
+        }
+      },
+    );
   }, [ref.current]);
 
   return [value!, loading, error];
@@ -85,10 +69,8 @@ export function useDocumentOnce_fork<T extends DocumentData>(
         setValue(undefined);
         return;
       }
-      const get = getDocFnFromGetOptions(opts?.getOptions);
-
       try {
-        const result = await get(reference);
+        const result = await getDoc(reference, opts?.getOptions?.source);
         if (isMounted.current) {
           setValue(result);
         }
@@ -148,20 +130,6 @@ export function useDocumentDataOnce_fork<T extends DocumentData>(
 
   return [value, loading, error, reloadData];
 }
-
-const getDocFnFromGetOptions = (
-  { source }: GetOptions = { source: "default" },
-) => {
-  switch (source) {
-    default:
-    case "default":
-      return getDoc;
-    case "cache":
-      return getDocFromCache;
-    case "server":
-      return getDocFromServer;
-  }
-};
 
 const getValueFromSnapshot = <T extends DocumentData>(
   snapshot: DocumentSnapshot<T> | undefined,

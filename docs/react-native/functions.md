@@ -22,3 +22,20 @@ Non-hook fetch functions for use outside of components.
 | `getDocuments`            | Fetch all documents in a collection query                      |
 | `getDocumentsData`        | Fetch only the data of all documents in a collection query     |
 | `getCollectionCount`      | Fetch the number of documents in a query                       |
+
+## Firestore reads
+
+These wrap React Native Firebase reads and run the registered
+[middleware](/react-native/middleware). A read you make with React Native
+Firebase directly skips the middleware, so use these instead.
+
+| Function         | Wraps                                              | Description                                      |
+| ---------------- | -------------------------------------------------- | ------------------------------------------------ |
+| `getDoc`         | `getDoc`, `getDocFromCache`, `getDocFromServer`    | Read a document once, from the given source      |
+| `getDocs`        | `getDocs`, `getDocsFromCache`, `getDocsFromServer` | Run a query once, from the given source          |
+| `getCount`       | `getCountFromServer`                               | Count the documents a query matches              |
+| `onDocSnapshot`  | `onSnapshot`                                       | Subscribe to a document; returns the unsubscribe |
+| `onDocsSnapshot` | `onSnapshot`                                       | Subscribe to a query; returns the unsubscribe    |
+
+The listeners take `onError` as a required argument. Without it, React Native
+Firebase would pass errors to `onNext`.

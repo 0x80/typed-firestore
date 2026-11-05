@@ -5,7 +5,8 @@ import type {
   QueryConstraints,
 } from "./firestore-types";
 import { makeMutableDocument } from "./make-mutable-document";
-import { getDocs, query } from "./typed-modular";
+import { getDocs } from "~/firestore";
+import { query } from "./typed-modular";
 
 export async function getDocuments<T extends DocumentData>(
   collectionRef: CollectionReference<T>,
